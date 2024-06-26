@@ -17,5 +17,6 @@ namespace house_manager
         public virtual DbSet<Car> Cars { get; set; } = null!;
         public virtual DbSet<OwnedApartment> OwnedApartments { get; set; } = null!;
         public virtual DbSet<OwnedCar> OwnedCars { get; set; } = null!;
+        public virtual DbSet<OwnedParkingSpace> OwnedParkingSpaces { get; set; } = null!;
     }
 }

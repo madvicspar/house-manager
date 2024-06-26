@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using house_manager;
 
@@ -11,9 +12,11 @@ using house_manager;
 namespace house_manager.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20240625051300_ApartmentsChangings")]
+    partial class ApartmentsChangings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,9 +69,6 @@ namespace house_manager.Migrations
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ResidentsNumber")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -169,6 +169,9 @@ namespace house_manager.Migrations
                     b.Property<float>("OwnershipPercentage")
                         .HasColumnType("real");
 
+                    b.Property<int>("ResidentsNumber")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApartmentId");
@@ -201,29 +204,6 @@ namespace house_manager.Migrations
                     b.ToTable("OwnedCars");
                 });
 
-            modelBuilder.Entity("house_manager.Models.OwnedParkingSpace", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ParkingSpaceId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("ParkingSpaceId");
-
-                    b.ToTable("OwnedParkingSpaces");
-                });
-
             modelBuilder.Entity("house_manager.Models.ParkingSpace", b =>
                 {
                     b.Property<int>("Id")
@@ -237,14 +217,16 @@ namespace house_manager.Migrations
 
                     b.Property<string>("Number")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("HouseId");
 
-                    b.HasIndex("Number")
-                        .IsUnique();
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("ParkingSpaces");
                 });
@@ -306,7 +288,7 @@ namespace house_manager.Migrations
                         .IsRequired();
 
                     b.HasOne("house_manager.Models.Lodger", "Owner")
-                        .WithMany("OwnedApartments")
+                        .WithMany("OwnersOwned")
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -325,7 +307,7 @@ namespace house_manager.Migrations
                         .IsRequired();
 
                     b.HasOne("house_manager.Models.Lodger", "Owner")
-                        .WithMany("OwnedCars")
+                        .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -333,25 +315,6 @@ namespace house_manager.Migrations
                     b.Navigation("Car");
 
                     b.Navigation("Owner");
-                });
-
-            modelBuilder.Entity("house_manager.Models.OwnedParkingSpace", b =>
-                {
-                    b.HasOne("house_manager.Models.Lodger", "Owner")
-                        .WithMany("OwnedParkingSpaces")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("house_manager.Models.ParkingSpace", "ParkingSpace")
-                        .WithMany()
-                        .HasForeignKey("ParkingSpaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
-
-                    b.Navigation("ParkingSpace");
                 });
 
             modelBuilder.Entity("house_manager.Models.ParkingSpace", b =>
@@ -362,7 +325,15 @@ namespace house_manager.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("house_manager.Models.Lodger", "Owner")
+                        .WithMany("ParkingSpaces")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("House");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("house_manager.Models.Apartment", b =>
@@ -381,11 +352,9 @@ namespace house_manager.Migrations
 
             modelBuilder.Entity("house_manager.Models.Lodger", b =>
                 {
-                    b.Navigation("OwnedApartments");
+                    b.Navigation("OwnersOwned");
 
-                    b.Navigation("OwnedCars");
-
-                    b.Navigation("OwnedParkingSpaces");
+                    b.Navigation("ParkingSpaces");
                 });
 #pragma warning restore 612, 618
         }

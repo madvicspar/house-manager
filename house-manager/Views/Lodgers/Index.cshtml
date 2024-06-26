@@ -1,0 +1,254 @@
+﻿@model Lodger
+
+@{
+    ViewData["Title"] = "Lodgers List";
+}
+
+<h2>Жильцы дома по адресу: </h2>
+<h4 id="HouseAdress"></h4>
+
+<hr/>
+<div>
+    <button class="btn btn-primary mb-2" id="btnAdd">Добавить жильца</button>
+</div>
+<div data="container">
+    <table class="table table-success table-striped table-responsive table-hover">
+        <thead>
+            <tr>
+                <th>Id жильца</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Серия и номер паспорта</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="tblBody">
+        </tbody>
+    </table>
+</div>
+<div class="modal" id="LodgerModalAdd">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Добавление нового жильца</h3>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" asp-for="Id" value="0" />
+                <div class="mb-2">
+                    <label asp-for="Surname">Фамилия</label>
+                    <input type="text" asp-for="Surname" class="form-control" placeholder="Введите фамилию" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Name">Имя</label>
+                    <input type="text" asp-for="Name" class="form-control" placeholder="Введите имя" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Pathronymic">Отчество</label>
+                    <input type="text" asp-for="Pathronymic" class="form-control" placeholder="Введите отчество" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="PassportNumber">Серия и номер паспорта</label>
+                    <input type="text" asp-for="PassportNumber" class="form-control" placeholder="Введите серию и номер паспорта" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="Save" type="submit" onclick="Insert();">Добавить</button>
+                    <button class="btn btn-danger" data-bs-dismiss="modal" onclick="Hide();" />Отмена</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="LodgerModalEdit">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitleEdit">Редактирование данные жильца</h3>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" asp-for="Id" value="0" />
+                <div class="mb-2">
+                    <label asp-for="Surname">Фамилия</label>
+                    <input type="text" asp-for="Surname" id="SurnameEdit" class="form-control" placeholder="Введите фамилию" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Name">Имя</label>
+                    <input type="text" asp-for="Name" id="NameEdit" class="form-control" placeholder="Введите имя" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Pathronymic">Отчество</label>
+                    <input type="text" asp-for="Pathronymic" id="PathronymicEdit" class="form-control" placeholder="Введите отчество" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="PassportNumber">Серия и номер паспорта</label>
+                    <input type="text" asp-for="PassportNumber" id="PassportNumberEdit" class="form-control" placeholder="Введите серию и номер паспорта" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-success" id="Update" type="submit" onclick="Update();" style="display:none">Изменить</button>
+                    <button class="btn btn-danger" data-bs-dismiss="modal" onclick="Hide();">Отмена</button>
+                </div>
+
+                <div class="apartments">
+                    <h4>Квартиры в собственности</h4>
+                    <div>
+                        <button class="btn btn-primary mb-2" id="btnEditApartments">Выбрать квартиры</button>
+                    </div>
+                    <table class="table table-success table-striped table-responsive table-hover">
+                        <thead>
+                            <tr>
+                                <th>Номер квартиры</th>
+                                <th>Процент собственности</th>
+                                <th>Кол-во жильцов</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apartmentsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="apartmentsEditBlock" style="display: none;">
+                    <table class="table table-success table-striped table-responsive table-hover">
+                        <thead>
+                            <tr>
+                                <th id="ApartmentId" style="display: none">Id</th>
+                                <th id="IsSelectedApartment">Выбрано?</th>
+                                <th id="ApartmentNumber">Номер квартиры</th>
+                                <th id="ResidentsNumber">Кол-во проживающих</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apartmentsEditTableBody">
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" id="saveApartments">Сохранить</button>
+                    <button type="button" class="btn btn-secondary" id="hideApartments">Отмена</button>
+                </div>
+
+@*                 <div id="apartmentsOwnershipPercentageBlock" style="display: none;">
+                    <div class="mb-3">
+                        <label for="ApartmentNumber" class="form-label">Apartment Number</label>
+                        <input type="text" class="form-control" id="ApartmentNumber" placeholder="Apartment Number">
+                    </div>
+                    <div class="mb-3">
+                        <label for="OwnershipPercentage" class="form-label">Ownership Percentage</label>
+                        <input type="text" class="form-control" id="OwnershipPercentageAdd" placeholder="Ownership Percentage">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="saveOwnershipPercentage">Add</button>
+                    <button type="button" class="btn btn-secondary" id="hideApartments">Отмена</button>
+                </div> *@
+
+                <div class="Cars">
+                    <h4>Автомобили в собственности</h4>
+                    <p id="carsLength" />
+                    <div class="d-inline">
+                        <button class="btn btn-primary mb-2" id="btnAddCar">Добавить новую машину</button>
+                    </div>
+                    <div class="d-inline">
+                        <button class="btn btn-primary mb-2" id="btnEditCars">Выбрать машины из списка</button>
+                    </div>
+                    <div class="cars">
+                        <table class="table table-success table-striped table-responsive table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Государственный номер</th>
+                                    <th>Марка</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="carsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="carAddBlock" style="display: none;">
+                    <div class="mb-3">
+                        <label for="RegistrationNumber" class="form-label">Государственный номер</label>
+                        <input type="text" class="form-control" id="RegistrationNumber" placeholder="Введите номер регистрации">
+                    </div>
+                    <div class="mb-3">
+                        <label for="Brand" class="form-label">Марка</label>
+                        <input type="text" class="form-control" id="Brand" placeholder="Введите марку автомобиля">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="addCar">Добавить</button>
+                    <button type="button" class="btn btn-secondary" id="hideCar">Отмена</button>
+                </div>
+
+                <div id="carEditBlock" style="display: none;">
+                    <div class="mb-3" style="display: none;">
+                        <label for="CarIdEdit" class="form-label">CarIdEdit</label>
+                        <input type="number" class="form-control" id="CarIdEdit" placeholder="CarIdEdit">
+                    </div>
+                    <div class="mb-3">
+                        <label for="RegistrationNumberEdit" class="form-label">Государственный номер</label>
+                        <input type="text" class="form-control" id="RegistrationNumberEdit" placeholder="Введите номер регистрации автомобиля">
+                    </div>
+                    <div class="mb-3">
+                        <label for="BrandEdit" class="form-label">Марка автомобиля</label>
+                        <input type="text" class="form-control" id="BrandEdit" placeholder="Введите марку автомобиля">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="saveCar">Обновить</button>
+                    <button type="button" class="btn btn-secondary" id="hideCar">Отмена</button>
+                </div>
+
+                <div id="carsEditBlock" style="display: none;">
+                    <table class="table table-success table-striped table-responsive table-hover">
+                        <thead>
+                            <tr>
+                                <th id="CarIdSelection" style="display: none">CarId</th>
+                                <th id="IsSelectedCar">Выбрано?</th>
+                                <th id="RegistrationNumberSelection">Государственный номер</th>
+                                <th id="BrandSelection">Марка автомобиля</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carsEditTableBody">
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" id="saveCars">Сохранить</button>
+                    <button type="button" class="btn btn-secondary" id="hideCars">Отмена</button>
+                </div>
+
+                <div class="parkingSpaces">
+                    <h4>Парковочные места</h4>
+                    <p id="parkingSpacesLength" />
+                    <div class="d-inline">
+                        <button class="btn btn-primary mb-2" id="btnEditParkingSpaces">Выбрать парковочные места списка (только незанятые или ваши)</button>
+                    </div>
+                    <table class="table table-success table-striped table-responsive table-hover">
+                        <thead>
+                            <tr>
+                                <th>Номер парковочного места</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parkingSpacesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="parkingSpacesEditBlock" style="display: none;">
+                    <label>Незанятые парковочные места</label>
+                    <table class="table table-success table-striped table-responsive table-hover">
+                        <thead>
+                            <tr>
+                                <th id="ParkingSpaceIdSelection" style="display: none">CarId</th>
+                                <th id="IsSelectedParkingSpace">Выбрано?</th>
+                                <th id="NumberSelection">Номер парковочного места</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parkingSpacesEditTableBody">
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" id="saveParkingSpaces">Сохранить</button>
+                    <button type="button" class="btn btn-secondary" id="hideParkingSpaces">Отмена</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/js/lodgers.js"></script>

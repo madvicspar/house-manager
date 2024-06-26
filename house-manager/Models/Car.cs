@@ -10,6 +10,6 @@ namespace house_manager.Models
         public string RegistrationNumber { get; set; }
         [Required]
         public string Brand { get; set; }
-        public virtual List<Lodger> Owners { get; set; }
+        public virtual ICollection<Lodger>? Owners { get; set; }
     }
 }
