@@ -60,9 +60,10 @@ namespace house_manager.Controllers
             {
                 _context.Lodgers.Update(lodger);
                 _context.SaveChanges();
-                return Json("Lodger updated successfully");
+                return Json(new { success = false, message = "Lodger updated successfully" } );
             }
-            return Json("Model validation failed");
+            
+            return Json( new { success = false, message = ModelState["PassportNumber"].Errors[0] });
         }
 
         [HttpPost]
@@ -88,13 +89,13 @@ namespace house_manager.Controllers
         [HttpPost]
         public JsonResult UpdateCar(Car car)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && !_context.Cars.Any(x => x.RegistrationNumber == car.RegistrationNumber))
             {
                 _context.Cars.Update(car);
                 _context.SaveChanges();
                 return Json("Car updated successfully");
             }
-            return Json("Model validation failed");
+            return Json(new { success = false, message = "Машина с таким номером уже добавлена" });
         }
 
         [HttpPost]
@@ -112,16 +113,25 @@ namespace house_manager.Controllers
         }
 
         [HttpPost]
-        public JsonResult DeleteCar(string id)
+        public JsonResult DeleteCar(string id, string ownerId)
         {
             var car = _context.Cars.Find(int.Parse(id));
-            if (car != null)
+            if (car != null && !_context.OwnedCars.Any(x => x.CarId == car.Id && x.OwnerId != int.Parse(ownerId)))
             {
                 _context.Cars.Remove(car);
                 _context.SaveChanges();
-                return Json("Car deleted successfully");
+                return Json(new { success = true, message = "Car deleted successfully" } );
             }
-            return Json("Car not found");
+            else
+            {
+                var lodger = _context.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(ownerId));
+                if (lodger != null)
+                {
+                    _context.OwnedCars.Remove(_context.OwnedCars.FirstOrDefault(x => x.CarId == car.Id && x.OwnerId == lodger.Id));
+                    _context.SaveChanges();
+                }
+            }
+            return Json(new { success = false, message = "Car not found" } );
         }
 
         public JsonResult GetAllApartments()
@@ -243,6 +253,28 @@ namespace house_manager.Controllers
                 return Json("ParkingSpace deleted successfully");
             }
             return Json("ParkingSpace not found");
+        }
+
+        [HttpGet]
+        public JsonResult EditOwnedApartment(string id)
+        {
+            var ownedApartment = _context.OwnedApartments.Where(l => l.Id == int.Parse(id)).Include(x => x.Apartment).First();
+            return Json(ownedApartment);
+        }
+
+        [HttpPost]
+        public JsonResult UpdateOwnedApartment(string id, string ownershipPercentage, string ownerId)
+        {
+            if (!float.TryParse(ownershipPercentage, out float temp))
+                return Json(new { success = false, message = "Вводите только числа" });
+            var ownedApartment = _context.OwnedApartments.Find(int.Parse(id));
+            var sum = _context.OwnedApartments.Where(x => x.ApartmentId == ownedApartment.ApartmentId && x.OwnerId != int.Parse(ownerId)).Sum(x => x.OwnershipPercentage);
+            if (sum + float.Parse(ownershipPercentage) > 100)
+                return Json(new { success = false, message = $"Ваша доля стоимости не должна превышать {(100 - sum)}%" });
+            ownedApartment.OwnershipPercentage = float.Parse(ownershipPercentage);
+            _context.OwnedApartments.Update(ownedApartment);
+            _context.SaveChanges();
+            return Json( new { success = true, message = "Owned Apartment updated successfully" } );
         }
     }
 }

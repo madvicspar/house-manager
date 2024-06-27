@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace house_manager.Models
 {
@@ -10,6 +11,7 @@ namespace house_manager.Models
         public virtual Apartment Apartment { get; set; }
         [ForeignKey("OwnerId")]
         public int OwnerId { get; set; }
+        [JsonIgnore]
         public virtual Lodger Owner { get; set; }
         public float OwnershipPercentage { get; set; }
     }

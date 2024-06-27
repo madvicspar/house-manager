@@ -140,6 +140,7 @@ function Edit(id) {
                     object += '<td>' + item.apartment.number + '</td>';
                     object += '<td>' + item.ownershipPercentage + '</td>';
                     object += '<td>' + item.apartment.residentsNumber + '</td>';
+                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="EditPercentageApartment(' + item.id + ')">Изменить долю</td>';
                 });
                 $('#apartmentsTableBody').html(object);
 
@@ -190,6 +191,8 @@ function Update() {
             if (response == null || response == undefined || response.Length == 0) {
                 alert('Unable to save the data');
             }
+            else if (!response.success)
+                alert(response.message.errorMessage);
             else {
                 HideModal();
                 GetLodgers();
@@ -385,13 +388,16 @@ $('#saveCar').click(function () {
         type: 'POST',
         data: formData,
         success: function (response) {
-            // Handle the response
-            $('#carEditBlock').css('display', 'none');
-            var id = $('#Id').val();
-            Edit(id);
+            if (!response.success) {
+                alert(response.message);
+            } else {
+                $('#carEditBlock').css('display', 'none');
+                var id = $('#Id').val();
+                Edit(id);
+            }
         },
         error: function (error) {
-            console.log('Error: ' + error);
+            alert('Error: ' + error);
         }
     });
 });
@@ -442,17 +448,27 @@ $('#addCar').click(function () {
 // Delete Car
 function DeleteCar(id) {
     if (confirm('Вы уверены, что хотите удалить данные о машине?')) {
+        var ownerId = $('#Id').val();
+
+        var formData = {
+            id: id,
+            ownerId: ownerId  // Передаем Id жильца
+        };
+
         $.ajax({
-            url: '/Lodgers/DeleteCar?id=' + id,
+            url: '/Lodgers/DeleteCar',
             type: 'POST',
+            data: formData,
             success: function (response) {
                 if (response == null || response == undefined) {
                     alert('Не получилось удалить данные о машине');
                 }
-                else {
-                    var id = $('#Id').val();
-                    Edit(id);
+                else if (!response.success) {
+                    alert('Эта машина принадлежит не только вам, поэтому удалить невозможно');
                 }
+                var id = $('#Id').val();
+                Edit(id);
+                ownedCarsMap = {};
             },
             error: function () {
                 alert('Не получилось удалить данные о машине');
@@ -545,6 +561,7 @@ $('#saveApartments').click(function () {
 $('#hideApartments').click(function () {
     $('#apartmentsEditBlock').css('display', 'none');
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
+    ownedApartmentsMap = {};
 });
 
 // Cars
@@ -733,4 +750,52 @@ $('#saveParkingSpaces').click(function () {
 // Hide Edit ApartmentsList
 $('#hideParkingSpaces').click(function () {
     $('#parkingSpacesEditBlock').css('display', 'none');
+});
+
+function EditPercentageApartment(id) {
+    $.ajax({
+        url: '/Lodgers/EditOwnedApartment?id=' + id,
+        type: 'GET',
+        success: function (response) {
+            if (response) {
+                $('#apartmentsOwnershipPercentageBlock').css('display', 'block');
+                $('#OwnedApartmentIdEdit').val(response.id);
+                $('#ApartmentNumberEdit').val(response.apartment.number);
+                $('#OwnershipPercentageAdd').val(response.ownershipPercentage);
+            }
+        },
+        error: function (error) {
+            console.log('Error: ' + error);
+        }
+    });
+}
+
+$('#saveOwnershipPercentage').click(function () {
+    var formData = {
+        id: $('#OwnedApartmentIdEdit').val(),
+        ownershipPercentage: $('#OwnershipPercentageAdd').val(),
+        ownerId: $('#Id').val()
+    };
+
+    $.ajax({
+        url: '/Lodgers/UpdateOwnedApartment',
+        type: 'POST',
+        data: formData,
+        success: function (response) {
+            if (!response.success) {
+                alert(response.message);
+            } else {
+                $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
+                var id = $('#Id').val();
+                Edit(id);
+            }
+        },
+        error: function (error) {
+            alert('Error: ' + error);
+        }
+    });
+});
+
+$('#hideOwnershipPercentage').click(function () {
+    $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
 });

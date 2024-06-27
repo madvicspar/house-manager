@@ -1,8 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace house_manager.Models
 {
+    [Index(nameof(PassportNumber), IsUnique = true)]
     public class Lodger
     { 
         public int Id { get; set; }
