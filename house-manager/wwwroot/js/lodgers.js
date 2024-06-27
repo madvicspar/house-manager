@@ -1,13 +1,19 @@
 ﻿$(document).ready(function () {
-    GetLodgers();
+    LoadData();
+    $('#btnAdd').click(showAddLodgerModal);
+    $('#btnSearch').click(showSearchModal);
 });
 
 var ownedApartmentsMap = {};
 var ownedCarsMap = {};
 var ownedParkingSpacesMap = {};
 
-/*Read Data*/
-function GetLodgers() {
+function LoadData() {
+    GetHouseAdress();
+    GetLodgers();
+}
+
+function GetHouseAdress() {
     $.ajax({
         url: '/Lodgers/GetHouseAdress',
         type: 'GET',
@@ -25,32 +31,16 @@ function GetLodgers() {
             alert(error);
         }
     });
+}
+
+function GetLodgers() {
     $.ajax({
         url: '/Lodgers/GetLodgers',
         type: 'GET',
         dataType: 'Json',
         contentType: 'application/json;charset=utf-8',
         success: function (response) {
-            if (response == null || response == undefined || response.Length == 0) {
-                var object = '';
-                object += '<tr>';
-                object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
-                object += '</tr>';
-                $('#tblBody').html(object);
-            }
-            else {
-                var object = '';
-                $.each(response, function (index, item) {
-                    object += '<tr>';
-                    object += '<td>' + item.id + '</td>';
-                    object += '<td>' + item.surname + '</td>';
-                    object += '<td>' + item.name + '</td>';
-                    object += '<td>' + item.pathronymic + '</td>';
-                    object += '<td>' + item.passportNumber + '</td>';
-                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
-                });
-                $('#tblBody').html(object);
-            }
+            DisplayLodgers(response);
         },
         error: function (error) {
             alert(error);
@@ -58,11 +48,15 @@ function GetLodgers() {
     });
 }
 
-$('#btnAdd').click(function () {
+function showAddLodgerModal() {
     ClearData();
     $('#LodgerModalAdd').modal('show');
-});
+}
 
+function showSearchModal() {
+    ClearSearchData();
+    $('#LodgerModalSearch').modal('show');
+}
 
 /*Insert Data*/
 function Insert() {
@@ -99,6 +93,7 @@ function Insert() {
 
 /*Edit Data*/
 function Edit(id) {
+    HideAllEdit();
     $.ajax({
         url: '/Lodgers/Edit?id=' + id,
         type: 'GET',
@@ -196,7 +191,6 @@ function Update() {
             else {
                 HideModal();
                 GetLodgers();
-                alert(response);
             }
         },
         error: function () {
@@ -231,6 +225,7 @@ function HideModal() {
     ClearData();
     $('#LodgerModalAdd').modal('hide');
     $('#LodgerModalEdit').modal('hide');
+    $('#LodgerModalSearch').modal('hide');
     $('#carEditBlock').css('display', 'none');
     $('#carAddBlock').css('display', 'none');
 }
@@ -356,7 +351,7 @@ $('#PassportNumberEdit').change(function () {
 
 // Edit Car
 function EditCar(id) {
-    // Make an AJAX request to get car data for the given ID
+    HideAllEdit();
     $.ajax({
         url: '/Lodgers/EditCar?id=' + id,
         type: 'GET',
@@ -410,9 +405,8 @@ $('#hideCar').click(function () {
 
 // Add Car
 $('#btnAddCar').click(function () {
-    $('#carEditBlock').css('display', 'none');
+    HideAllEdit();
     $('#carAddBlock').css('display', 'block');
-    $('#carModalTitle').text('Add Car');
 });
 
 // Add Car
@@ -479,6 +473,7 @@ function DeleteCar(id) {
 
 // Edit ApartmentsList
 $('#btnEditApartments').click(function () {
+    HideAllEdit();
     $('#apartmentsEditBlock').css('display', 'block');
     $.ajax({
         url: '/Lodgers/GetAllApartments',
@@ -568,6 +563,7 @@ $('#hideApartments').click(function () {
 
 // Edit CarsList
 $('#btnEditCars').click(function () {
+    HideAllEdit();
     $('#carsEditBlock').css('display', 'block');
     $.ajax({
         url: '/Lodgers/GetAllCars',
@@ -674,6 +670,7 @@ function DeleteParkingSpace(id) {
 
 // Edit parkingSpacesList
 $('#btnEditParkingSpaces').click(function () {
+    HideAllEdit();
     $('#parkingSpacesEditBlock').css('display', 'block');
     var id = $('#Id').val();
     $.ajax({
@@ -753,6 +750,7 @@ $('#hideParkingSpaces').click(function () {
 });
 
 function EditPercentageApartment(id) {
+    HideAllEdit();
     $.ajax({
         url: '/Lodgers/EditOwnedApartment?id=' + id,
         type: 'GET',
@@ -800,10 +798,6 @@ $('#hideOwnershipPercentage').click(function () {
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
 });
 
-$('#btnSearch').click(function () {
-    $('#LodgerModalSearch').css('display', 'block');
-});
-
 $('#Search').click(function () {
     var formData = {
         surname: $('#SurnameSearch').val(),
@@ -826,26 +820,7 @@ function SearchLodgers(criteria) {
         data: criteria,
         dataType: 'json',
         success: function (response) {
-            if (response == null || response == undefined || response.Length == 0) {
-                var object = '';
-                object += '<tr>';
-                object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
-                object += '</tr>';
-                $('#tblBody').html(object);
-            }
-            else {
-                var object = '';
-                $.each(response, function (index, item) {
-                    object += '<tr>';
-                    object += '<td>' + item.id + '</td>';
-                    object += '<td>' + item.surname + '</td>';
-                    object += '<td>' + item.name + '</td>';
-                    object += '<td>' + item.pathronymic + '</td>';
-                    object += '<td>' + item.passportNumber + '</td>';
-                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
-                });
-                $('#tblBody').html(object);
-            }
+            DisplayLodgers(response);
             HideSearch();
         },
         error: function (error) {
@@ -855,7 +830,7 @@ function SearchLodgers(criteria) {
 };
 
 function HideSearch() {
-    $('#LodgerModalSearch').css('display', 'none');
+    $('#LodgerModalSearch').modal('hide');
 }
 
 function GetApartments(callback) {
@@ -879,4 +854,54 @@ function GetApartments(callback) {
             alert('Unable to read the data');
         }
     });
+}
+
+function HideAllEdit() {
+    //$('#LodgerModalEdit').modal('hide');
+    $('#apartmentsEditBlock').css('display', 'none');
+    $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
+    $('#carEditBlock').css('display', 'none');
+    $('#carsEditBlock').css('display', 'none');
+    $('#carAddBlock').css('display', 'none');
+    $('#parkingSpacesEditBlock').css('display', 'none');
+    $('#parkingSpaces').css('display', 'none');
+}
+
+function ClearSearchData() {
+    $('#SurnameSearch').val(''),
+    $('#NameSearch').val(''),
+    $('#PathronymicSearch').val(''),
+    $('#PassportNumberSearch').val(''),
+    $('#ApartmentNumberSearch').val(''),
+    $('#RegistrationNumberSearch').val(''),
+    $('#BrandSearch').val(''),
+    $('#ParkingSpaceSearch').val('')
+}
+
+$('#SearchCancel').click(function () {
+    GetLodgers();
+});
+
+
+function DisplayLodgers(response) {
+    if (response == null || response == undefined || response.Length == 0) {
+        var object = '';
+        object += '<tr>';
+        object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
+        object += '</tr>';
+        $('#tblBody').html(object);
+    }
+    else {
+        var object = '';
+        $.each(response, function (index, item) {
+            object += '<tr>';
+            object += '<td>' + item.id + '</td>';
+            object += '<td>' + item.surname + '</td>';
+            object += '<td>' + item.name + '</td>';
+            object += '<td>' + item.pathronymic + '</td>';
+            object += '<td>' + item.passportNumber + '</td>';
+            object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
+        });
+        $('#tblBody').html(object);
+    }
 }

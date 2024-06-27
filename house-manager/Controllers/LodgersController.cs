@@ -60,7 +60,7 @@ namespace house_manager.Controllers
             {
                 _context.Lodgers.Update(lodger);
                 _context.SaveChanges();
-                return Json(new { success = false, message = "Lodger updated successfully" } );
+                return Json(new { success = true, message = "Lodger updated successfully" } );
             }
             
             return Json( new { success = false, message = ModelState["PassportNumber"].Errors[0] });
