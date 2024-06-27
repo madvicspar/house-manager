@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using house_manager.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using house_manager;
-using house_manager.Models;
 
 namespace house_manager.Controllers
 {
@@ -19,139 +13,96 @@ namespace house_manager.Controllers
             _context = context;
         }
 
-        // GET: Cars
-        public async Task<IActionResult> Index()
+        public JsonResult Get()
         {
-            return View(await _context.Cars.ToListAsync());
+            var cars = _context.Cars.ToList();
+            return Json(cars);
         }
 
-        // GET: Cars/Details/5
-        public async Task<IActionResult> Details(int? id)
+        [HttpGet]
+        public JsonResult Edit(string id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var car = await _context.Cars
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (car == null)
-            {
-                return NotFound();
-            }
-
-            return View(car);
+            var car = _context.Cars.FirstOrDefault(l => l.Id == int.Parse(id));
+            return Json(car);
         }
 
-        // GET: Cars/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Cars/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,RegistrationNumber,Brand")] Car car)
+        public JsonResult Update(Car car)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && !_context.Cars.Any(x => x.RegistrationNumber == car.RegistrationNumber))
             {
-                _context.Add(car);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                _context.Cars.Update(car);
+                _context.SaveChanges();
+                return Json("Car updated successfully");
             }
-            return View(car);
+            if (ModelState["RegistrationNumber"].Errors.Count > 0)
+                return Json(new { success = false, message = ModelState["RegistrationNumber"].Errors[0] });
+            return Json(new { success = false, message = "Машина с таким номером уже добавлена" });
         }
 
-        // GET: Cars/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var car = await _context.Cars.FindAsync(id);
-            if (car == null)
-            {
-                return NotFound();
-            }
-            return View(car);
-        }
-
-        // POST: Cars/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,RegistrationNumber,Brand")] Car car)
+        public JsonResult Insert(Car car, string id)
         {
-            if (id != car.Id)
-            {
-                return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(car);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CarExists(car.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                _context.Cars.Add(car);
+                _context.SaveChanges();
+                _context.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = int.Parse(id) });
+                _context.SaveChanges();
+                return Json(new { success = true, message = "Car added successfully" });
             }
-            return View(car);
+            return Json(new { success = false, message = ModelState["car.RegistrationNumber"].Errors[0] });
         }
 
-        // GET: Cars/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        [HttpPost]
+        public JsonResult Delete(string id, string ownerId)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var car = await _context.Cars
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (car == null)
-            {
-                return NotFound();
-            }
-
-            return View(car);
-        }
-
-        // POST: Cars/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var car = await _context.Cars.FindAsync(id);
-            if (car != null)
+            var car = _context.Cars.Find(int.Parse(id));
+            if (car != null && !_context.OwnedCars.Any(x => x.CarId == car.Id && x.OwnerId != int.Parse(ownerId)))
             {
                 _context.Cars.Remove(car);
+                _context.SaveChanges();
+                return Json(new { success = true, message = "Car deleted successfully" });
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            else
+            {
+                var lodger = _context.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(ownerId));
+                if (lodger != null)
+                {
+                    _context.OwnedCars.Remove(_context.OwnedCars.FirstOrDefault(x => x.CarId == car.Id && x.OwnerId == lodger.Id));
+                    _context.SaveChanges();
+                }
+            }
+            return Json(new { success = false, message = "Car not found" });
         }
 
-        private bool CarExists(int id)
+        [HttpPost]
+        public JsonResult UpdateCars(string id, List<OwnedCar> selectedCars)
         {
-            return _context.Cars.Any(e => e.Id == id);
+            var lodger = _context.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(id));
+            if (lodger != null)
+            {
+                var lodgerCars = _context.OwnedCars.Where(x => x.OwnerId == lodger.Id);
+                foreach (var car in lodgerCars)
+                {
+                    _context.OwnedCars.Remove(car);
+                }
+                _context.SaveChanges();
+
+                foreach (var item in selectedCars)
+                {
+                    var car = _context.Cars.Find(item.Id);
+                    if (car != null)
+                    {
+                        _context.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = lodger.Id });
+                    }
+                }
+
+                _context.SaveChanges();
+                return Json("Выбранные машины успешно добавлены");
+            }
+            return Json("Ошибка при добавлении выбранных машин");
         }
     }
 }
