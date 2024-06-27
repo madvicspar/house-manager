@@ -95,21 +95,24 @@ namespace house_manager.Controllers
                 _context.SaveChanges();
                 return Json("Car updated successfully");
             }
+            if (ModelState["RegistrationNumber"].Errors.Count > 0)
+                return Json(new { success = false, message = ModelState["RegistrationNumber"].Errors[0] });
             return Json(new { success = false, message = "Машина с таким номером уже добавлена" });
         }
 
         [HttpPost]
         public JsonResult InsertCar(Car car, string id)
         {
+
             if (ModelState.IsValid)
             {
                 _context.Cars.Add(car);
                 _context.SaveChanges();
                 _context.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = int.Parse(id) });
                 _context.SaveChanges();
-                return Json("Car added successfully");
+                return Json(new { success = true, message = "Car added successfully" } );
             }
-            return Json("Model validation failed");
+            return Json(new { success = false, message = ModelState["car.RegistrationNumber"].Errors[0] } );
         }
 
         [HttpPost]
@@ -146,16 +149,20 @@ namespace house_manager.Controllers
             var lodger = _context.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(id));
             if (lodger != null)
             {
+                var ownedApartmentsIds = lodger.OwnedApartments.Where(x => selectedApartments.Any(c => c.Id == x.ApartmentId)).Select(x => x.ApartmentId).ToList();
+
                 var lodgerApartments = _context.OwnedApartments.Where(x => x.OwnerId == lodger.Id);
                 foreach (var apartment in lodgerApartments)
                 {
-                    _context.OwnedApartments.Remove(apartment);
+                    if (!ownedApartmentsIds.Contains(apartment.ApartmentId))
+                        _context.OwnedApartments.Remove(apartment);
                 }
                 _context.SaveChanges();
 
-                // Создаем новые связи для выбранных квартир
                 foreach (var item in selectedApartments)
                 {
+                    if (ownedApartmentsIds.Contains(item.Id))
+                        continue;
                     var apartment = _context.Apartments.Find(item.Id);
                     if (apartment != null)
                     {

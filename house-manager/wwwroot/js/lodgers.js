@@ -58,7 +58,6 @@ function showSearchModal() {
     $('#LodgerModalSearch').modal('show');
 }
 
-/*Insert Data*/
 function Insert() {
     var result = Validate();
     if (!result)
@@ -71,6 +70,10 @@ function Insert() {
     formData.pathronymic = $('#Pathronymic').val();
     formData.passportnumber = $('#PassportNumber').val();
 
+    MakeInsert(formData);
+}
+
+function MakeInsert(formData) {
     $.ajax({
         url: '/Lodgers/Insert',
         data: formData,
@@ -82,7 +85,6 @@ function Insert() {
             else {
                 HideModal();
                 GetLodgers();
-                alert(response);
             }
         },
         error: function () {
@@ -91,7 +93,6 @@ function Insert() {
     });
 }
 
-/*Edit Data*/
 function Edit(id) {
     HideAllEdit();
     $.ajax({
@@ -106,58 +107,8 @@ function Edit(id) {
             else if (response.length == 0) {
                 alert('Data not available with the id' + id);
             }
-            else {
-
-                $('#LodgerModalEdit').modal('show');
-                $('#Update').css('display', 'block');
-                $('#Id').val(response.id);
-                $('#SurnameEdit').val(response.surname);
-                $('#NameEdit').val(response.name);
-                $('#PathronymicEdit').val(response.pathronymic);
-                $('#PassportNumberEdit').val(response.passportNumber);
-
-                var object = '';
-                $.each(response.ownedApartments, function (index, item) {
-                    ownedApartmentsMap[item.apartment.id] = item;
-                });
-
-                $.each(response.ownedCars, function (index, item) {
-                    ownedCarsMap[item.car.id] = item;
-                });
-
-                $.each(response.ownedParkingSpaces, function (index, item) {
-                    ownedParkingSpacesMap[item.parkingSpace.id] = item;
-                });
-
-                $.each(response.ownedApartments, function (index, item) {
-                    object += '<tr>';
-/*                    object += '<td><input type="checkbox" id="apartmentCheckbox_' + item.apartment.id + '" value="' + item.apartment.id + '" /></td>';*/
-                    object += '<td>' + item.apartment.number + '</td>';
-                    object += '<td>' + item.ownershipPercentage + '</td>';
-                    object += '<td>' + item.apartment.residentsNumber + '</td>';
-                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="EditPercentageApartment(' + item.id + ')">Изменить долю</td>';
-                });
-                $('#apartmentsTableBody').html(object);
-
-                object = '';
-                $.each(response.ownedCars, function (index, item) {
-                    object += '<tr>';
-                    object += '<td>' + item.car.registrationNumber + '</td>';
-                    object += '<td>' + item.car.brand + '</td>';
-                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="EditCar(' + item.car.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="DeleteCar(' + item.car.id + ')">Удалить</a> </td>';
-                });
-                $('#carsLength').html('Количество: ' + response.ownedCars.length + 'шт.');
-                $('#carsTableBody').html(object);
-
-                object = '';
-                $.each(response.ownedParkingSpaces, function (index, item) {
-                    object += '<tr>';
-                    object += '<td>' + item.parkingSpace.number + '</td>';
-                    object += '<td> <a href="#" class="btn btn-danger btn-sm" onclick="DeleteParkingSpace(' + item.parkingSpace.id + ')">Отменить бронь</a> </td>';
-                });
-                $('#parkingSpacesLength').html('Количество: ' + response.ownedParkingSpaces.length + 'шт.');
-                $('#parkingSpacesTableBody').html(object);
-            }
+            else
+                showEditModal(response);
         },
         error: function () {
             alert('Unable to read the data');
@@ -165,7 +116,60 @@ function Edit(id) {
     });
 }
 
-/*Update Data*/
+function showEditModal(response) {
+    $('#LodgerModalEdit').modal('show');
+    $('#Update').css('display', 'block');
+    $('#Id').val(response.id);
+    $('#SurnameEdit').val(response.surname);
+    $('#NameEdit').val(response.name);
+    $('#PathronymicEdit').val(response.pathronymic);
+    $('#PassportNumberEdit').val(response.passportNumber);
+
+    updateOwnedItems(response.ownedApartments, 'apartmentsTableBody', 'apartment');
+    updateOwnedItems(response.ownedCars, 'carsTableBody', 'car');
+    updateOwnedItems(response.ownedParkingSpaces, 'parkingSpacesTableBody', 'parkingSpace');
+    $('#carsLength').html(`Количество: ${response.ownedCars.length} шт.`);
+    $('#parkingSpacesLength').html(`Количество: ${response.ownedParkingSpaces.length} шт.`);
+}
+
+function updateOwnedItems(items, tableBodyId, category) {
+    let object = '';
+    items.forEach(item => {
+        updateOwnedItemMap(item, category);
+        object += `<tr>${generateTableRow(item, category)}</tr>`;
+    });
+    $(`#${tableBodyId}`).html(object);
+}
+
+function generateTableRow(item, category) {
+    let rowHtml = '';
+    if (category === 'apartment') {
+        rowHtml += `<td>${item.apartment.number}</td>`;
+        rowHtml += `<td>${item.ownershipPercentage}</td>`;
+        rowHtml += `<td>${item.apartment.residentsNumber}</td>`;
+        rowHtml += `<td><a href="#" class="btn btn-primary btn-sm" onclick="EditPercentageApartment(${item.id})">Изменить долю</a></td>`;
+    } else if (category === 'car') {
+        rowHtml += `<td>${item.car.registrationNumber}</td>`;
+        rowHtml += `<td>${item.car.brand}</td>`;
+        rowHtml += `<td><a href="#" class="btn btn-primary btn-sm" onclick="EditCar(${item.car.id})">Изменить</a><a href="#" class="btn btn-danger btn-sm" onclick="DeleteCar(${item.car.id})">Удалить</a></td>`;
+    } else if (category === 'parkingSpace') {
+        rowHtml += `<td>${item.parkingSpace.number}</td>`;
+        rowHtml += `<td><a href="#" class="btn btn-danger btn-sm" onclick="DeleteParkingSpace(${item.parkingSpace.id})">Отменить бронь</a></td>`;
+    }
+    return rowHtml;
+}
+
+function updateOwnedItemMap(item, category) {
+    const itemId = category === 'apartment' ? item.apartment.id : category === 'car' ? item.car.id : item.parkingSpace.id;
+    if (category === 'apartment') {
+        ownedApartmentsMap[itemId] = item;
+    } else if (category === 'car') {
+        ownedCarsMap[itemId] = item;
+    } else if (category === 'parkingSpace') {
+        ownedParkingSpacesMap[itemId] = item;
+    }
+}
+
 function Update() {
     var result = Validate();
     if (!result)
@@ -199,9 +203,8 @@ function Update() {
     });
 }
 
-/* Delete Data */
 function Delete(id) {
-    if (confirm('Вы уверены, что хотите удалить данные о жильце?')) {
+    if (confirm('Вы уверены, что хотите удалить жильца?')) {
         $.ajax({
             url: '/Lodgers/Delete?id=' + id,
             type: 'POST',
@@ -278,7 +281,6 @@ function Validate() {
 
     if ($('#PassportNumber').val().trim() == "") {
         $('#PassportNumber').css('border-color', 'Red');
-        //$('#PassportNumber').val(error);
     }
     else {
         $('#PassportNumber').css('border-color', 'lightgrey');
@@ -307,7 +309,6 @@ function Validate() {
 
     if ($('#PassportNumberEdit').val().trim() == "") {
         $('#PassportNumberEdit').css('border-color', 'Red');
-        //$('#PassportNumber').val(error);
     }
     else {
         $('#PassportNumberEdit').css('border-color', 'lightgrey');
@@ -348,173 +349,82 @@ $('#PassportNumberEdit').change(function () {
     Validate();
 })
 
-
-// Edit Car
-function EditCar(id) {
-    HideAllEdit();
-    $.ajax({
-        url: '/Lodgers/EditCar?id=' + id,
-        type: 'GET',
-        success: function (response) {
-            if (response) {
-                $('#CarIdEdit').val(response.id);
-                $('#RegistrationNumberEdit').val(response.registrationNumber);
-                $('#BrandEdit').val(response.brand);
-                $('#carModalTitle').text('Edit Car');
-                $('#carEditBlock').css('display', 'block');
-            }
-        },
-        error: function (error) {
-            console.log('Error: ' + error);
-        }
-    });
-}
-
-// Save Car
-$('#saveCar').click(function () {
-    var formData = {
-        id: $('#CarIdEdit').val(),
-        registrationNumber: $('#RegistrationNumberEdit').val(),
-        brand: $('#BrandEdit').val()
-    };
-
-    $.ajax({
-        url: '/Lodgers/UpdateCar',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            if (!response.success) {
-                alert(response.message);
-            } else {
-                $('#carEditBlock').css('display', 'none');
-                var id = $('#Id').val();
-                Edit(id);
-            }
-        },
-        error: function (error) {
-            alert('Error: ' + error);
-        }
-    });
-});
-
-// Hide Car Edit Block
-$('#hideCar').click(function () {
-    $('#carEditBlock').css('display', 'none');
-    $('#carAddBlock').css('display', 'none');
-});
-
-// Add Car
-$('#btnAddCar').click(function () {
-    HideAllEdit();
-    $('#carAddBlock').css('display', 'block');
-});
-
-// Add Car
-$('#addCar').click(function () {
-    var registrationNumber = $('#RegistrationNumber').val();
-    var brand = $('#Brand').val();
-    var ownerId = $('#Id').val();  // Получаем Id жильца
-
-    var formData = {
-        car: {
-            registrationNumber: registrationNumber,
-            brand: brand
-        },
-        id: ownerId  // Передаем Id жильца
-    };
-
-    $.ajax({
-        url: '/Lodgers/InsertCar',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            // Handle the response
-            $('#carAddBlock').css('display', 'none');
-            var id = $('#Id').val();
-            Edit(id);
-        },
-        error: function (error) {
-            console.log('Error: ' + error);
-        }
-    });
-});
-
-// Delete Car
-function DeleteCar(id) {
-    if (confirm('Вы уверены, что хотите удалить данные о машине?')) {
-        var ownerId = $('#Id').val();
-
-        var formData = {
-            id: id,
-            ownerId: ownerId  // Передаем Id жильца
-        };
-
-        $.ajax({
-            url: '/Lodgers/DeleteCar',
-            type: 'POST',
-            data: formData,
-            success: function (response) {
-                if (response == null || response == undefined) {
-                    alert('Не получилось удалить данные о машине');
-                }
-                else if (!response.success) {
-                    alert('Эта машина принадлежит не только вам, поэтому удалить невозможно');
-                }
-                var id = $('#Id').val();
-                Edit(id);
-                ownedCarsMap = {};
-            },
-            error: function () {
-                alert('Не получилось удалить данные о машине');
-            }
+function DisplayLodgers(response) {
+    if (response == null || response == undefined || response.Length == 0) {
+        var object = '';
+        object += '<tr>';
+        object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
+        object += '</tr>';
+        $('#tblBody').html(object);
+    }
+    else {
+        var object = '';
+        $.each(response, function (index, item) {
+            object += '<tr>';
+            object += '<td>' + item.id + '</td>';
+            object += '<td>' + item.surname + '</td>';
+            object += '<td>' + item.name + '</td>';
+            object += '<td>' + item.pathronymic + '</td>';
+            object += '<td>' + item.passportNumber + '</td>';
+            object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
         });
+        $('#tblBody').html(object);
     }
 }
 
-// Edit ApartmentsList
+/* Apartments */
+
 $('#btnEditApartments').click(function () {
     HideAllEdit();
     $('#apartmentsEditBlock').css('display', 'block');
+    loadApartments();
+});
+
+function loadApartments() {
     $.ajax({
         url: '/Lodgers/GetAllApartments',
         type: 'GET',
         contentType: 'application/json;charset=utf-8',
-        datatype: 'json',
-        success: function (response) {
-            if (response == null || response == undefined) {
-                alert('Unable to read the data');
-            }
-            else if (response.length == 0) {
-                alert('В доме нет квартир)');
-            }
-            else {
-
-                var object = '';
-
-                $.each(response, function (index, apartment) {
-                    object += '<tr>';
-                    object += '<td style="display:none">' + apartment.id + '</td>';
-                    var checked = ownedApartmentsMap[apartment.id] ? 'checked' : ''; // Проверяем, принадлежит ли текущая квартира пользователю
-                    object += '<td><input type="checkbox" id="apartmentCheckbox_' + apartment.id + '" value="' + apartment.id + '" ' + checked + '/></td>';
-                    object += '<td>' + apartment.number + '</td>';
-/*                    object += '<td>' + 'значение для поля ownershipPercentage' + '</td>'; // добавьте соответствующее значение*/
-                    object += '<td>' + apartment.residentsNumber + '</td>'; // добавьте соответствующее значение
-                });
-                $('#apartmentsEditTableBody').html(object);
-            }
-        },
-        error: function () {
-            alert('Unable to read the data');
-        }
+        dataType: 'json',
+        success: handleApartmentsResponse,
+        error: handleApartmentsError
     });
-});
+}
 
-// Save ApartmentsList
+function handleApartmentsResponse(response) {
+    if (!response || response.length === 0) {
+        alert('В доме нет квартир');
+    } else {
+        updateApartmentsTable(response);
+    }
+}
+
+function handleApartmentsError() {
+    alert('Unable to read the data');
+}
+
+function updateApartmentsTable(apartments) {
+    let tableRows = '';
+    apartments.forEach(apartment => {
+        tableRows += `<tr>`;
+        tableRows += `<td style="display:none">${apartment.id}</td>`;
+        const checked = ownedApartmentsMap[apartment.id] ? 'checked' : '';
+        tableRows += `<td><input type="checkbox" id="apartmentCheckbox_${apartment.id}" value="${apartment.id}" ${checked}/></td>`;
+        tableRows += `<td>${apartment.number}</td>`;
+        tableRows += `<td>${apartment.residentsNumber}</td>`;
+        tableRows += `</tr>`;
+    });
+    $('#apartmentsEditTableBody').html(tableRows);
+}
 
 $('#saveApartments').click(function () {
+    var selectedApartments = getSelectedApartmentsData();
+    updateLodgerApartments(selectedApartments);
+});
+
+function getSelectedApartmentsData() {
     var selectedApartments = [];
 
-    // Находим все отмеченные чекбоксы квартир и добавляем их в список selectedApartments
     $('input[type=checkbox]').each(function () {
         if (this.checked) {
             var $row = $(this).closest('tr');
@@ -529,6 +439,10 @@ $('#saveApartments').click(function () {
         }
     });
 
+    return selectedApartments;
+}
+
+function updateLodgerApartments(selectedApartments) {
     var ownerId = $('#Id').val();
 
     var formData = {
@@ -540,213 +454,25 @@ $('#saveApartments').click(function () {
         url: '/Lodgers/UpdateApartments',
         type: 'POST',
         data: formData,
-        success: function (response) {
-            $('#apartmentsEditBlock').css('display', 'none');
-            Edit(ownerId);
-            ownedApartmentsMap = {};
-/*            alert('Рекомендуется изменить проценты собственности');*/
-        },
-        error: function (error) {
-            console.log('Error: ' + error);
-        }
+        success: handleUpdateApartmentsSuccess,
+        error: handleUpdateApartmentsError
     });
-});
+}
 
-// Hide Edit ApartmentsList
+function handleUpdateApartmentsSuccess(response) {
+    $('#apartmentsEditBlock').css('display', 'none');
+    Edit($('#Id').val());
+    ownedApartmentsMap = {};
+}
+
+function handleUpdateApartmentsError(error) {
+    alert('Error: ' + error);
+}
+
 $('#hideApartments').click(function () {
     $('#apartmentsEditBlock').css('display', 'none');
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
     ownedApartmentsMap = {};
-});
-
-// Cars
-
-// Edit CarsList
-$('#btnEditCars').click(function () {
-    HideAllEdit();
-    $('#carsEditBlock').css('display', 'block');
-    $.ajax({
-        url: '/Lodgers/GetAllCars',
-        type: 'GET',
-        contentType: 'application/json;charset=utf-8',
-        datatype: 'json',
-        success: function (response) {
-            if (response == null || response == undefined) {
-                alert('Unable to read the data');
-            }
-            else if (response.length == 0) {
-                alert('Нет машин)');
-            }
-            else {
-
-                var object = '';
-
-                $.each(response, function (index, car) {
-                    object += '<tr>';
-                    object += '<td style="display:none">' + car.id + '</td>';
-                    var checked = ownedCarsMap[car.id] ? 'checked' : '';
-                    object += '<td><input type="checkbox" id="carCheckbox_' + car.id + '" value="' + car.id + '" ' + checked + '/></td>';
-                    object += '<td>' + car.registrationNumber + '</td>';
-                    object += '<td>' + car.brand + '</td>';
-                });
-                $('#carsEditTableBody').html(object);
-            }
-        },
-        error: function () {
-            alert('Unable to read the data');
-        }
-    });
-});
-
-// Save CarsList
-
-$('#saveCars').click(function () {
-    var selectedCars = [];
-
-    $('input[type=checkbox]').each(function () {
-        if (this.checked) {
-            var $row = $(this).closest('tr');
-            var carId = $row.find('td:eq(0)').text();
-            var registrationNumber = $row.find('td:eq(2)').text();
-            var brand = $row.find('td:eq(3)').text();
-            selectedCars.push({
-                Id: carId,
-                RegistrationNumber: registrationNumber,
-                Brand: brand
-            });
-        }
-    });
-
-    var ownerId = $('#Id').val();
-
-    var formData = {
-        id: ownerId,
-        selectedCars: selectedCars,
-    };
-
-    $.ajax({
-        url: '/Lodgers/UpdateCars',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            $('#carsEditBlock').css('display', 'none');
-            Edit(ownerId);
-            ownedCarsMap = {};
-        },
-        error: function (error) {
-            console.log('Error: ' + error);
-        }
-    });
-});
-
-// Hide Edit ApartmentsList
-$('#hideCars').click(function () {
-    $('#carsEditBlock').css('display', 'none');
-});
-
-
-// ParkingSpaces
-
-function DeleteParkingSpace(id) {
-    if (confirm('Вы уверены, что хотите удалить данные о парковочном месте?')) {
-        $.ajax({
-            url: '/Lodgers/DeleteParkingSpace?id=' + id,
-            type: 'POST',
-            success: function (response) {
-                if (response == null || response == undefined) {
-                    alert('Не получилось удалить данные о парковочном месте');
-                }
-                else {
-                    var id = $('#Id').val();
-                    Edit(id);
-                }
-            },
-            error: function () {
-                alert('Не получилось удалить данные о парковочном месте');
-            }
-        });
-    }
-}
-
-// Edit parkingSpacesList
-$('#btnEditParkingSpaces').click(function () {
-    HideAllEdit();
-    $('#parkingSpacesEditBlock').css('display', 'block');
-    var id = $('#Id').val();
-    $.ajax({
-        url: '/Lodgers/GetAllParkingSpaces?id=' + id,
-        type: 'GET',
-        contentType: 'application/json;charset=utf-8',
-        datatype: 'json',
-        success: function (response) {
-            if (response == null || response == undefined) {
-                alert('Unable to read the data');
-            }
-            else if (response.length == 0) {
-                alert('Все парковочные места заняты');
-            }
-            else {
-
-                var object = '';
-
-                $.each(response, function (index, ownedParkingSpace) {
-                    object += '<tr>';
-                    object += '<td style="display:none">' + ownedParkingSpace.id + '</td>';
-                    var checked = ownedParkingSpacesMap[ownedParkingSpace.id] ? 'checked' : '';
-                    object += '<td><input type="checkbox" id="carCheckbox_' + ownedParkingSpace.id + '" value="' + ownedParkingSpace.id + '" ' + checked + '/></td>';
-                    object += '<td>' + ownedParkingSpace.number + '</td>';
-                });
-                $('#parkingSpacesEditTableBody').html(object);
-            }
-        },
-        error: function () {
-            alert('Unable to read the data');
-        }
-    });
-});
-
-// Save ParkingSpacesList
-
-$('#saveParkingSpaces').click(function () {
-    var selectedParkingSpaces = [];
-
-    $('input[type=checkbox]').each(function () {
-        if (this.checked) {
-            var $row = $(this).closest('tr');
-            var parkingSpaceId = $row.find('td:eq(0)').text();
-            var number = $row.find('td:eq(2)').text();
-            selectedParkingSpaces.push({
-                Id: parkingSpaceId,
-                Number: number
-            });
-        }
-    });
-
-    var ownerId = $('#Id').val();
-
-    var formData = {
-        id: ownerId,
-        selectedParkingSpaces: selectedParkingSpaces,
-    };
-
-    $.ajax({
-        url: '/Lodgers/UpdateParkingSpaces',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            $('#parkingSpacesEditBlock').css('display', 'none');
-            Edit(ownerId);
-            ownedParkingSpacesMap = {};
-        },
-        error: function (error) {
-            console.log('Error: ' + error);
-        }
-    });
-});
-
-// Hide Edit ApartmentsList
-$('#hideParkingSpaces').click(function () {
-    $('#parkingSpacesEditBlock').css('display', 'none');
 });
 
 function EditPercentageApartment(id) {
@@ -763,7 +489,7 @@ function EditPercentageApartment(id) {
             }
         },
         error: function (error) {
-            console.log('Error: ' + error);
+            alert('Error: ' + error);
         }
     });
 }
@@ -797,6 +523,375 @@ $('#saveOwnershipPercentage').click(function () {
 $('#hideOwnershipPercentage').click(function () {
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
 });
+
+function GetApartments(callback) {
+    $.ajax({
+        url: '/Lodgers/GetAllApartments',
+        type: 'GET',
+        contentType: 'application/json;charset=utf-8',
+        dataType: 'json',
+        success: function (response) {
+            if (response == null || response == undefined) {
+                alert('Unable to read the data');
+            }
+            else if (response.length == 0) {
+                alert('В доме нет квартир');
+            }
+            else {
+                callback(response);
+            }
+        },
+        error: function () {
+            alert('Unable to read the data');
+        }
+    });
+}
+
+
+/* Cars */
+
+function EditCar(id) {
+    HideAllEdit();
+    $.ajax({
+        url: '/Lodgers/EditCar?id=' + id,
+        type: 'GET',
+        success: function (response) {
+            if (response) {
+                $('#CarIdEdit').val(response.id);
+                $('#RegistrationNumberEdit').val(response.registrationNumber);
+                $('#BrandEdit').val(response.brand);
+                $('#carModalTitle').text('Edit Car');
+                $('#carEditBlock').css('display', 'block');
+            }
+        },
+        error: function (error) {
+            alert('Не получилось получить данные о машине');
+        }
+    });
+}
+
+$('#saveCar').click(function () {
+    var formData = {
+        id: $('#CarIdEdit').val(),
+        registrationNumber: $('#RegistrationNumberEdit').val(),
+        brand: $('#BrandEdit').val()
+    };
+
+    $.ajax({
+        url: '/Lodgers/UpdateCar',
+        type: 'POST',
+        data: formData,
+        success: function (response) {
+            if (!response.success) {
+                if (typeof (response.message) == "string")
+                    alert(response.message);
+                else
+                    alert(response.message.errorMessage);
+            } else {
+                $('#carEditBlock').css('display', 'none');
+                var id = $('#Id').val();
+                Edit(id);
+            }
+        },
+        error: function (error) {
+            alert('Error: ' + error);
+        }
+    });
+});
+
+$('#hideCar').click(function () {
+    $('#carEditBlock').css('display', 'none');
+    $('#carAddBlock').css('display', 'none');
+});
+
+$('#btnAddCar').click(function () {
+    HideAllEdit();
+    $('#carAddBlock').css('display', 'block');
+});
+
+$('#addCar').click(function () {
+    var registrationNumber = $('#RegistrationNumber').val();
+    var brand = $('#Brand').val();
+    var ownerId = $('#Id').val();
+
+    var formData = {
+        car: {
+            registrationNumber: registrationNumber,
+            brand: brand
+        },
+        id: ownerId
+    };
+
+    $.ajax({
+        url: '/Lodgers/InsertCar',
+        type: 'POST',
+        data: formData,
+        success: function (response) {
+            if (!response.success) {
+                alert(response.message.errorMessage);
+            }
+            else {
+                $('#carAddBlock').css('display', 'none');
+                var id = $('#Id').val();
+                Edit(id);
+            }
+        },
+        error: function (error) {
+            alert('Не получилось добавить машину');
+        }
+    });
+});
+
+function DeleteCar(id) {
+    if (confirm('Вы уверены, что хотите удалить данные о машине?')) {
+        var ownerId = $('#Id').val();
+
+        var formData = {
+            id: id,
+            ownerId: ownerId
+        };
+
+        $.ajax({
+            url: '/Lodgers/DeleteCar',
+            type: 'POST',
+            data: formData,
+            success: function (response) {
+                if (response == null || response == undefined) {
+                    alert('Не получилось удалить данные о машине');
+                }
+                else if (!response.success) {
+                    alert('Эта машина принадлежит не только вам, поэтому удалить невозможно');
+                }
+                var id = $('#Id').val();
+                Edit(id);
+                ownedCarsMap = {};
+            },
+            error: function () {
+                alert('Не получилось удалить данные о машине');
+            }
+        });
+    }
+}
+
+$('#btnEditCars').click(handleBtnEditCarsClick);
+
+function handleBtnEditCarsClick() {
+    HideAllEdit();
+    $('#carsEditBlock').css('display', 'block');
+    getAllCarsData();
+}
+
+function getAllCarsData() {
+    $.ajax({
+        url: '/Lodgers/GetAllCars',
+        type: 'GET',
+        contentType: 'application/json;charset=utf-8',
+        datatype: 'json',
+        success: function (response) {
+            handleAllCarsDataResponse(response);
+        },
+        error: function () {
+            alert('Unable to read the data');
+        }
+    });
+}
+
+function handleAllCarsDataResponse(response) {
+    if (response == null || response == undefined) {
+        alert('Unable to read the data');
+    } else if (response.length == 0) {
+        alert('Нет машин');
+    } else {
+        displayCars(response);
+    }
+}
+
+function displayCars(cars) {
+    var object = '';
+    $.each(cars, function (index, car) {
+        object += '<tr>';
+        object += '<td style="display:none">' + car.id + '</td>';
+        var checked = ownedCarsMap[car.id] ? 'checked' : '';
+        object += '<td><input type="checkbox" id="carCheckbox_' + car.id + '" value="' + car.id + '" ' + checked + '/></td>';
+        object += '<td>' + car.registrationNumber + '</td>';
+        object += '<td>' + car.brand + '</td>';
+    });
+    $('#carsEditTableBody').html(object);
+}
+
+$('#saveCars').click(handleSaveCarsClick);
+
+function handleSaveCarsClick() {
+    var selectedCars = retrieveSelectedCarsData();
+    var ownerId = $('#Id').val();
+    var formData = {
+        id: ownerId,
+        selectedCars: selectedCars,
+    };
+    updateCars(formData, ownerId);
+}
+
+function retrieveSelectedCarsData() {
+    var selectedCars = [];
+    $('input[type=checkbox]').each(function () {
+        if (this.checked) {
+            var $row = $(this).closest('tr');
+            var carId = $row.find('td:eq(0)').text();
+            var registrationNumber = $row.find('td:eq(2)').text();
+            var brand = $row.find('td:eq(3)').text();
+            selectedCars.push({
+                Id: carId,
+                RegistrationNumber: registrationNumber,
+                Brand: brand
+            });
+        }
+    });
+    return selectedCars;
+}
+
+function updateCars(formData, ownerId) {
+    $.ajax({
+        url: '/Lodgers/UpdateCars',
+        type: 'POST',
+        data: formData,
+        success: function (response) {
+            $('#carsEditBlock').css('display', 'none');
+            Edit(ownerId);
+            ownedCarsMap = {};
+        },
+        error: function (error) {
+            alert('Error: ' + error);
+        }
+    });
+}
+
+$('#hideCars').click(function () {
+    $('#carsEditBlock').css('display', 'none');
+});
+
+/* Parking Spaces */
+
+function DeleteParkingSpace(id) {
+    if (confirm('Вы уверены, что хотите отменить бронь на парковочное место?')) {
+        $.ajax({
+            url: '/Lodgers/DeleteParkingSpace?id=' + id,
+            type: 'POST',
+            success: function (response) {
+                if (response == null || response == undefined) {
+                    alert('Не получилось отменить бронь');
+                }
+                else {
+                    var id = $('#Id').val();
+                    Edit(id);
+                }
+            },
+            error: function () {
+                alert('Не получилось отменить бронь');
+            }
+        });
+    }
+}
+
+$('#btnEditParkingSpaces').click(handleBtnEditParkingSpacesClick);
+
+function handleBtnEditParkingSpacesClick() {
+    HideAllEdit();
+    $('#parkingSpacesEditBlock').css('display', 'block');
+    var id = $('#Id').val();
+    getParkingSpacesData(id);
+}
+
+function getParkingSpacesData(id) {
+    $.ajax({
+        url: '/Lodgers/GetAllParkingSpaces?id=' + id,
+        type: 'GET',
+        contentType: 'application/json;charset=utf-8',
+        datatype: 'json',
+        success: function (response) {
+            handleParkingSpacesDataResponse(response);
+        },
+        error: function () {
+            alert('Unable to read the data');
+        }
+    });
+}
+
+function handleParkingSpacesDataResponse(response) {
+    if (response == null || response == undefined) {
+        alert('Unable to read the data');
+    } else if (response.length == 0) {
+        alert('Все парковочные места заняты');
+    } else {
+        displayParkingSpaces(response);
+    }
+}
+
+function displayParkingSpaces(parkingSpaces) {
+    var object = '';
+    $.each(parkingSpaces, function (index, ownedParkingSpace) {
+        object += '<tr>';
+        object += '<td style="display:none">' + ownedParkingSpace.id + '</td>';
+        var checked = ownedParkingSpacesMap[ownedParkingSpace.id] ? 'checked' : '';
+        object += '<td><input type="checkbox" id="carCheckbox_' + ownedParkingSpace.id + '" value="' + ownedParkingSpace.id + '" ' + checked + '/></td>';
+        object += '<td>' + ownedParkingSpace.number + '</td>';
+    });
+    $('#parkingSpacesEditTableBody').html(object);
+}
+
+function saveParkingSpaces() {
+    var selectedParkingSpaces = getSelectedParkingSpacesData();
+
+    var ownerId = $('#Id').val();
+
+    var formData = {
+        id: ownerId,
+        selectedParkingSpaces: selectedParkingSpaces,
+    };
+
+    updateParkingSpaces(formData, ownerId);
+}
+
+function getSelectedParkingSpacesData() {
+    var selectedParkingSpaces = [];
+
+    $('input[type=checkbox]').each(function () {
+        if (this.checked) {
+            var $row = $(this).closest('tr');
+            var parkingSpaceId = $row.find('td:eq(0)').text();
+            var number = $row.find('td:eq(2)').text();
+            selectedParkingSpaces.push({
+                Id: parkingSpaceId,
+                Number: number
+            });
+        }
+    });
+
+    return selectedParkingSpaces;
+}
+
+function updateParkingSpaces(formData, ownerId) {
+    $.ajax({
+        url: '/Lodgers/UpdateParkingSpaces',
+        type: 'POST',
+        data: formData,
+        success: function (response) {
+            $('#parkingSpacesEditBlock').css('display', 'none');
+            Edit(ownerId);
+            ownedParkingSpacesMap = {};
+        },
+        error: function (error) {
+            alert('Error: ' + error);
+        }
+    });
+}
+
+$('#saveParkingSpaces').click(saveParkingSpaces);
+
+$('#hideParkingSpaces').click(function () {
+    $('#parkingSpacesEditBlock').css('display', 'none');
+});
+
+/* Search */
 
 $('#Search').click(function () {
     var formData = {
@@ -833,31 +928,7 @@ function HideSearch() {
     $('#LodgerModalSearch').modal('hide');
 }
 
-function GetApartments(callback) {
-    $.ajax({
-        url: '/Lodgers/GetAllApartments',
-        type: 'GET',
-        contentType: 'application/json;charset=utf-8',
-        dataType: 'json',
-        success: function (response) {
-            if (response == null || response == undefined) {
-                alert('Unable to read the data');
-            }
-            else if (response.length == 0) {
-                alert('В доме нет квартир');
-            }
-            else {
-                callback(response); // Вызываем callback и передаем ему apartmentsList
-            }
-        },
-        error: function () {
-            alert('Unable to read the data');
-        }
-    });
-}
-
 function HideAllEdit() {
-    //$('#LodgerModalEdit').modal('hide');
     $('#apartmentsEditBlock').css('display', 'none');
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
     $('#carEditBlock').css('display', 'none');
@@ -869,39 +940,15 @@ function HideAllEdit() {
 
 function ClearSearchData() {
     $('#SurnameSearch').val(''),
-    $('#NameSearch').val(''),
-    $('#PathronymicSearch').val(''),
-    $('#PassportNumberSearch').val(''),
-    $('#ApartmentNumberSearch').val(''),
-    $('#RegistrationNumberSearch').val(''),
-    $('#BrandSearch').val(''),
-    $('#ParkingSpaceSearch').val('')
+        $('#NameSearch').val(''),
+        $('#PathronymicSearch').val(''),
+        $('#PassportNumberSearch').val(''),
+        $('#ApartmentNumberSearch').val(''),
+        $('#RegistrationNumberSearch').val(''),
+        $('#BrandSearch').val(''),
+        $('#ParkingSpaceSearch').val('')
 }
 
 $('#SearchCancel').click(function () {
     GetLodgers();
 });
-
-
-function DisplayLodgers(response) {
-    if (response == null || response == undefined || response.Length == 0) {
-        var object = '';
-        object += '<tr>';
-        object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
-        object += '</tr>';
-        $('#tblBody').html(object);
-    }
-    else {
-        var object = '';
-        $.each(response, function (index, item) {
-            object += '<tr>';
-            object += '<td>' + item.id + '</td>';
-            object += '<td>' + item.surname + '</td>';
-            object += '<td>' + item.name + '</td>';
-            object += '<td>' + item.pathronymic + '</td>';
-            object += '<td>' + item.passportNumber + '</td>';
-            object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
-        });
-        $('#tblBody').html(object);
-    }
-}
