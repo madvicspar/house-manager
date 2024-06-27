@@ -799,3 +799,84 @@ $('#saveOwnershipPercentage').click(function () {
 $('#hideOwnershipPercentage').click(function () {
     $('#apartmentsOwnershipPercentageBlock').css('display', 'none');
 });
+
+$('#btnSearch').click(function () {
+    $('#LodgerModalSearch').css('display', 'block');
+});
+
+$('#Search').click(function () {
+    var formData = {
+        surname: $('#SurnameSearch').val(),
+        name: $('#NameSearch').val(),
+        pathronymic: $('#PathronymicSearch').val(),
+        passportNumber: $('#PassportNumberSearch').val(),
+        apartmentNumber: $('#ApartmentNumberSearch').val(),
+        registrationNumber: $('#RegistrationNumberSearch').val(),
+        brand: $('#BrandSearch').val(),
+        parkingSpaceNumber: $('#ParkingSpaceSearch').val()
+    };
+
+    SearchLodgers(formData);
+});
+
+function SearchLodgers(criteria) {
+    $.ajax({
+        url: '/Lodgers/Search',
+        type: 'GET',
+        data: criteria,
+        dataType: 'json',
+        success: function (response) {
+            if (response == null || response == undefined || response.Length == 0) {
+                var object = '';
+                object += '<tr>';
+                object += 'td colspan="5">' + 'Lodgers not available' + '</td>';
+                object += '</tr>';
+                $('#tblBody').html(object);
+            }
+            else {
+                var object = '';
+                $.each(response, function (index, item) {
+                    object += '<tr>';
+                    object += '<td>' + item.id + '</td>';
+                    object += '<td>' + item.surname + '</td>';
+                    object += '<td>' + item.name + '</td>';
+                    object += '<td>' + item.pathronymic + '</td>';
+                    object += '<td>' + item.passportNumber + '</td>';
+                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Изменить</a> <a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Удалить</a> </td>';
+                });
+                $('#tblBody').html(object);
+            }
+            HideSearch();
+        },
+        error: function (error) {
+            alert('Произошла ошибка при выполнении поиска: ' + error);
+        }
+    });
+};
+
+function HideSearch() {
+    $('#LodgerModalSearch').css('display', 'none');
+}
+
+function GetApartments(callback) {
+    $.ajax({
+        url: '/Lodgers/GetAllApartments',
+        type: 'GET',
+        contentType: 'application/json;charset=utf-8',
+        dataType: 'json',
+        success: function (response) {
+            if (response == null || response == undefined) {
+                alert('Unable to read the data');
+            }
+            else if (response.length == 0) {
+                alert('В доме нет квартир');
+            }
+            else {
+                callback(response); // Вызываем callback и передаем ему apartmentsList
+            }
+        },
+        error: function () {
+            alert('Unable to read the data');
+        }
+    });
+}

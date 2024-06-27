@@ -276,5 +276,22 @@ namespace house_manager.Controllers
             _context.SaveChanges();
             return Json( new { success = true, message = "Owned Apartment updated successfully" } );
         }
+
+        public JsonResult Search(string surname, string name, string pathronymic, string passportNumber, string apartmentNumber, string registrationNumber, string brand, string parkingSpaceNumber)
+        {
+            var lodgers = _context.Lodgers.Include(x => x.OwnedParkingSpaces).ThenInclude(p => p.ParkingSpace).Include(x => x.OwnedApartments).ThenInclude(p => p.Apartment).Include(x => x.OwnedCars).ThenInclude(p => p.Car)
+                .Where(l =>
+                    (string.IsNullOrEmpty(surname) || l.Surname.Contains(surname)) &&
+                    (string.IsNullOrEmpty(name) || l.Name.Contains(name)) &&
+                    (string.IsNullOrEmpty(pathronymic) || l.Pathronymic.Contains(pathronymic)) &&
+                    (string.IsNullOrEmpty(passportNumber) || l.PassportNumber.Contains(passportNumber)) &&
+                    (string.IsNullOrEmpty(apartmentNumber) || l.OwnedApartments.Any(p => p.Apartment != null && p.Apartment.Number.Contains(apartmentNumber))) &&
+                    (string.IsNullOrEmpty(registrationNumber) || l.OwnedCars.Any(p => p.Car != null && p.Car.RegistrationNumber.Contains(registrationNumber))) &&
+                    (string.IsNullOrEmpty(brand) || l.OwnedCars.Any(p => p.Car != null && p.Car.Brand.Contains(brand))) &&
+                    (string.IsNullOrEmpty(parkingSpaceNumber) || l.OwnedParkingSpaces.Any(p => p.ParkingSpace != null && p.ParkingSpace.Number.Contains(parkingSpaceNumber)))
+            ).OrderBy(x => x.Surname + x.Name + x.Pathronymic).ToList();
+
+            return Json(lodgers);
+        }
     }
 }

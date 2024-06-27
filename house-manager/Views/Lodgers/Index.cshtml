@@ -11,6 +11,9 @@
 <div>
     <button class="btn btn-primary mb-2" id="btnAdd">Добавить жильца</button>
 </div>
+<div>
+    <button class="btn btn-primary mb-2" id="btnSearch">Поиск</button>
+</div>
 <div data="container">
     <table class="table table-success table-striped table-responsive table-hover">
         <thead>
@@ -250,6 +253,55 @@
                     <button type="button" class="btn btn-secondary" id="hideParkingSpaces">Отмена</button>
                 </div>
 
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="LodgerModalSearch">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitleSearch">Поиск по параметрам</h3>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label asp-for="Surname">Поиск по фамилии</label>
+                    <input type="text" asp-for="Surname" id="SurnameSearch" class="form-control" placeholder="Введите данные" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Name">Поиск по имени</label>
+                    <input type="text" asp-for="Name" id="NameSearch" class="form-control" placeholder="Введите данные для поиска" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Pathronymic">Поиск по отчеству</label>
+                    <input type="text" asp-for="Pathronymic" id="PathronymicSearch" class="form-control" placeholder="Введите данные для поиска" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="PassportNumber">Поиск по данным паспорта</label>
+                    <input type="text" asp-for="PassportNumber" id="PassportNumberSearch" class="form-control" placeholder="Введите серию и номер паспорта для поиска" />
+                </div>
+
+                <div class="apartmentsSearch">
+                    <label>Квартиры</label>
+                    <input type="number" class="form-control" id="ApartmentNumberSearch" placeholder="Введите данные для поиска">
+                </div>
+
+                <div class="carsSearch">
+                    <label>Автомобили</label>
+                    <input type="text" class="form-control" id="RegistrationNumberSearch" placeholder="Введите данные для поиска"> 
+                    <input type="text" class="form-control" id="BrandSearch" placeholder="Введите данные для поиска">
+                </div>
+
+                <div class="parkingSpacesSearch">
+                    <label>Парковочные места</label>
+                    <input type="text" class="form-control" id="ParkingSpaceSearch" placeholder="Введите данные для поиска">
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-success" id="Search" type="submit">Поиск</button>
+                    <button class="btn btn-danger" data-bs-dismiss="modal" onclick="HideSearch();">Отмена</button>
+                </div>
             </div>
         </div>
     </div>
