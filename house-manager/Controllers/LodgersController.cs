@@ -35,11 +35,16 @@ namespace house_manager.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Lodgers.Add(lodger);
-                _context.SaveChanges();
-                return Json("Lodger added successfully");
+                if (!_context.Lodgers.Any(l => l.Name == lodger.Name && l.Surname == lodger.Surname && l.Pathronymic == lodger.Pathronymic && l.PassportNumber == lodger.PassportNumber))
+                {
+                    _context.Lodgers.Add(lodger);
+                    _context.SaveChanges();
+                    return Json(new { success = true, message = "Lodger added successfully" } );
+                }
+                else
+                    return Json(new { success = false, message = "Lodger already exists" } );
             }
-            return Json("Model validation failed");
+            return Json(new { success = false, message = "Model validation failed" } );
         }
 
         [HttpGet]
@@ -56,9 +61,14 @@ namespace house_manager.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Lodgers.Update(lodger);
-                _context.SaveChanges();
-                return Json(new { success = true, message = "Lodger updated successfully" });
+                if (!_context.Lodgers.Any(l => l.Name == lodger.Name && l.Surname == lodger.Surname && l.Pathronymic == lodger.Pathronymic && l.PassportNumber == lodger.PassportNumber))
+                {
+                    _context.Lodgers.Update(lodger);
+                    _context.SaveChanges();
+                    return Json(new { success = true, message = "Lodger updated successfully" });
+                }
+                else
+                    return Json(new { success = false, message = "Lodger with such data already exists" });
             }
 
             return Json(new { success = false, message = ModelState["PassportNumber"].Errors[0] });
@@ -72,6 +82,7 @@ namespace house_manager.Controllers
             {
                 _context.Lodgers.Remove(lodger);
                 _context.SaveChanges();
+                _context.Entry(lodger).State = EntityState.Detached;
                 return Json("Lodger deleted successfully");
             }
             return Json("Lodger not found");

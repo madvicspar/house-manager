@@ -83,6 +83,8 @@ function MakeInsert(formData) {
                 alert('Unable to save the data');
             }
             else {
+                if (!response.success)
+                    alert(response.message);
                 HideModal();
                 GetLodgers();
             }
@@ -125,6 +127,10 @@ function showEditModal(response) {
     $('#PathronymicEdit').val(response.pathronymic);
     $('#PassportNumberEdit').val(response.passportNumber);
 
+    ownedApartmentsMap = {};
+    ownedCarsMap = {};
+    ownedParkingSpacesMap = {};
+
     updateOwnedItems(response.ownedApartments, 'apartmentsTableBody', 'apartment');
     updateOwnedItems(response.ownedCars, 'carsTableBody', 'car');
     updateOwnedItems(response.ownedParkingSpaces, 'parkingSpacesTableBody', 'parkingSpace');
@@ -147,7 +153,7 @@ function generateTableRow(item, category) {
         rowHtml += `<td>${item.apartment.number}</td>`;
         rowHtml += `<td>${item.ownershipPercentage}</td>`;
         rowHtml += `<td>${item.apartment.residentsNumber}</td>`;
-        rowHtml += `<td><a href="#" class="btn btn-primary btn-sm" onclick="EditPercentageApartment(${item.id})">Изменить долю</a></td>`;
+        rowHtml += `<td><a href="#" class="btn btn-primary btn-sm" onclick="EditPercentageApartment(${item.id})">Изменить долю</a><a href="#" class="btn btn-danger btn-sm" onclick="DeleteApartment(${item.apartment.id})">Удалить</a></td>`;
     } else if (category === 'car') {
         rowHtml += `<td>${item.car.registrationNumber}</td>`;
         rowHtml += `<td>${item.car.brand}</td>`;
@@ -190,8 +196,13 @@ function Update() {
             if (response == null || response == undefined || response.Length == 0) {
                 alert('Unable to save the data');
             }
-            else if (!response.success)
-                alert(response.message.errorMessage);
+            else if (!response.success) {
+                if (typeof (response.message) == "string")
+                    alert(response.message);
+                else
+                    alert(response.message.errorMessage);
+                Edit(formData.id);
+            }
             else {
                 HideModal();
                 GetLodgers();
@@ -361,7 +372,7 @@ function DisplayLodgers(response) {
         var object = '';
         $.each(response, function (index, item) {
             object += '<tr>';
-            object += '<td>' + item.id + '</td>';
+            object += '<td style="display:none">' + item.id + '</td>';
             object += '<td>' + item.surname + '</td>';
             object += '<td>' + item.name + '</td>';
             object += '<td>' + item.pathronymic + '</td>';
@@ -432,5 +443,9 @@ function ClearSearchData() {
 }
 
 $('#SearchCancel').click(function () {
+    GetLodgers();
+});
+
+$('#SearchBreak').click(function () {
     GetLodgers();
 });

@@ -28,3 +28,9 @@ body {
 .cars {
     display: block;
 }
+
+.navbar-brand {
+    margin-left: 110px;
+    font-size: 25px;
+    font-weight: bold;
+}

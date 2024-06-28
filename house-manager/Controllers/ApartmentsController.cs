@@ -77,5 +77,21 @@ namespace house_manager.Controllers
             _context.SaveChanges();
             return Json(new { success = true, message = "Owned Apartment updated successfully" });
         }
+
+        [HttpPost]
+        public JsonResult Delete(string id, string ownerId)
+        {
+            var apartment = _context.Apartments.Find(int.Parse(id));
+            var lodger = _context.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(ownerId));
+            if (lodger != null)
+            {
+                _context.OwnedApartments.Remove(_context.OwnedApartments.FirstOrDefault(x => x.ApartmentId == apartment.Id && x.OwnerId == lodger.Id));
+                _context.SaveChanges();
+                apartment.ResidentsNumber--;
+                _context.Apartments.Update(apartment);
+                _context.SaveChanges();
+            }
+            return Json(new { success = false, message = "Apartment not found" });
+        }
     }
 }

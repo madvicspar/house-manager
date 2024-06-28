@@ -17,7 +17,7 @@
     <table class="table table-success table-striped table-responsive table-hover">
         <thead>
             <tr>
-                <th>Id жильца</th>
+                <th style="display: none">Id жильца</th>
                 <th>Фамилия</th>
                 <th>Имя</th>
                 <th>Отчество</th>
@@ -36,7 +36,7 @@
                 <h3 class="modal-title" id="modalTitle">Добавление нового жильца</h3>
             </div>
             <div class="modal-body">
-                <input type="hidden" asp-for="Id" value="0" />
+                <input type="hidden" asp-for="Id" value="0" style="display: none"/>
                 <div class="mb-2">
                     <label asp-for="Surname">Фамилия</label>
                     <input type="text" asp-for="Surname" class="form-control" placeholder="Введите фамилию" />
@@ -139,7 +139,7 @@
                         <input type="text" class="form-control" id="ApartmentNumberEdit" placeholder="Номер квартиры" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="OwnershipPercentage" class="form-label">Процент собственности</label>
+                        <label for="OwnershipPercentage" class="form-label">Процент собственности (разделитель не точка, а запятая)</label>
                         <input type="text" class="form-control" id="OwnershipPercentageAdd" placeholder="Процент собственности">
                     </div>
                     <button type="button" class="btn btn-primary" id="saveOwnershipPercentage">Сохранить</button>
@@ -299,6 +299,7 @@
                 </div>
 
                 <div class="modal-footer">
+                    <button class="btn btn-danger" id="SearchBreak" data-bs-dismiss="modal" onclick="Hide();">Сбросить поиск</button>
                     <button class="btn btn-success" id="Search" type="submit">Поиск</button>
                     <button class="btn btn-danger" id="SearchCancel" data-bs-dismiss="modal" onclick="Hide();">Отмена</button>
                 </div>

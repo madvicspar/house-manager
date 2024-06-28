@@ -56,6 +56,8 @@ $('#hideCarEdit').click(function () {
 });
 
 $('#btnAddCar').click(function () {
+    $('#RegistrationNumber').val('');
+    $('#Brand').val('');
     HideAllEdit();
     $('#carAddBlock').css('display', 'block');
 });

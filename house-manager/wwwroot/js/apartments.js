@@ -170,3 +170,31 @@ function GetApartments(callback) {
         }
     });
 }
+
+function DeleteApartment(id) {
+    if (confirm('Вы уверены, что хотите удалить квартиру?')) {
+        var ownerId = $('#Id').val();
+
+        var formData = {
+            id: id,
+            ownerId: ownerId
+        };
+
+        $.ajax({
+            url: '/Apartments/Delete',
+            type: 'POST',
+            data: formData,
+            success: function (response) {
+                if (response == null || response == undefined) {
+                    alert('Не получилось удалить данные о квартире');
+                }
+                var id = $('#Id').val();
+                Edit(id);
+                ownedCarsMap = {};
+            },
+            error: function () {
+                alert('Не получилось удалить данные о квартире');
+            }
+        });
+    }
+}
