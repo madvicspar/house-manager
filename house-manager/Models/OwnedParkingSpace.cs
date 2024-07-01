@@ -4,6 +4,7 @@ namespace house_manager.Models
 {
     public class OwnedParkingSpace
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [ForeignKey("ParkingSpaceId")]
         public int ParkingSpaceId { get; set; }

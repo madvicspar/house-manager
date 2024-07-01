@@ -13,6 +13,8 @@ string? connectionString = builder.Configuration.GetConnectionString("DefaultCon
 builder.Services.AddDbContext<ApplicationContext>(options
                     => options.UseSqlServer(connectionString));
 
+ServiceActivator.Configure(builder.Services.BuildServiceProvider());
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 

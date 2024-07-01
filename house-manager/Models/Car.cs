@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace house_manager.Models
@@ -7,6 +8,7 @@ namespace house_manager.Models
     [Index(nameof(RegistrationNumber), IsUnique = true)]
     public class Car
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
         [RegularExpression(@"^[A-Z]{1}\d{3}[A-Z]{2}$", ErrorMessage = "Пожалуйста, введите номер в формате A123BC")]

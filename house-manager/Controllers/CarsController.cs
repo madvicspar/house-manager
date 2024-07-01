@@ -6,51 +6,77 @@ namespace house_manager.Controllers
 {
     public class CarsController : Controller
     {
-        private readonly ApplicationContext _context;
-
-        public CarsController(ApplicationContext context)
-        {
-            _context = context;
-        }
-
         public JsonResult Get()
         {
-            var cars = _context.Cars.ToList();
-            return Json(cars);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var cars = dataBase.Cars.ToList();
+                    return Json(cars);
+                }
+                return Json(null);
+            }
         }
 
         [HttpGet]
         public JsonResult Edit(string id)
         {
-            var car = _context.Cars.FirstOrDefault(l => l.Id == int.Parse(id));
-            return Json(car);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var car = dataBase.Cars.FirstOrDefault(l => l.Id == int.Parse(id));
+                    return Json(car);
+                }
+                return Json(null);
+            }
         }
 
         [HttpPost]
         public JsonResult Update(Car car)
         {
-            if (ModelState.IsValid && !_context.Cars.Any(x => x.RegistrationNumber == car.RegistrationNumber))
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.Cars.Update(car);
-                _context.SaveChanges();
-                return Json("Car updated successfully");
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    if (dataBase.Cars.Any(l => l.RegistrationNumber == car.RegistrationNumber))
+                        return Json(new { success = false, message = "Автомобиль с таким регистрационным номером уже существует" });
+                    if (ModelState.IsValid && !dataBase.Cars.Any(x => x.RegistrationNumber == car.RegistrationNumber))
+                    {
+                        dataBase.Cars.Update(car);
+                        dataBase.SaveChanges();
+                        return Json("Car updated successfully");
+                    }
+                    if (ModelState["RegistrationNumber"].Errors.Count > 0)
+                        return Json(new { success = false, message = ModelState["RegistrationNumber"].Errors[0] });
+                    return Json(new { success = false, message = "Машина с таким номером уже добавлена" });
+                }
+                return Json(null);
             }
-            if (ModelState["RegistrationNumber"].Errors.Count > 0)
-                return Json(new { success = false, message = ModelState["RegistrationNumber"].Errors[0] });
-            return Json(new { success = false, message = "Машина с таким номером уже добавлена" });
         }
 
         [HttpPost]
         public JsonResult Insert(Car car, string id)
         {
-
             if (ModelState.IsValid)
             {
-                _context.Cars.Add(car);
-                _context.SaveChanges();
-                _context.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = int.Parse(id) });
-                _context.SaveChanges();
-                return Json(new { success = true, message = "Car added successfully" });
+                using (var serviceScope = ServiceActivator.GetScope())
+                {
+                    var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                    if (dataBase != null)
+                    {
+                        dataBase.Cars.Add(car);
+                        dataBase.SaveChanges();
+                        dataBase.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = int.Parse(id) });
+                        dataBase.SaveChanges();
+                        return Json(new { success = true, message = "Car added successfully" });
+                    }
+                    return Json(null);
+                }
             }
             return Json(new { success = false, message = ModelState["car.RegistrationNumber"].Errors[0] });
         }
@@ -58,51 +84,67 @@ namespace house_manager.Controllers
         [HttpPost]
         public JsonResult Delete(string id, string ownerId)
         {
-            var car = _context.Cars.Find(int.Parse(id));
-            if (car != null && !_context.OwnedCars.Any(x => x.CarId == car.Id && x.OwnerId != int.Parse(ownerId)))
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.Cars.Remove(car);
-                _context.SaveChanges();
-                return Json(new { success = true, message = "Car deleted successfully" });
-            }
-            else
-            {
-                var lodger = _context.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(ownerId));
-                if (lodger != null)
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
                 {
-                    _context.OwnedCars.Remove(_context.OwnedCars.FirstOrDefault(x => x.CarId == car.Id && x.OwnerId == lodger.Id));
-                    _context.SaveChanges();
+                    var car = dataBase.Cars.Find(int.Parse(id));
+                    if (car != null && !dataBase.OwnedCars.Any(x => x.CarId == car.Id && x.OwnerId != int.Parse(ownerId)))
+                    {
+                        dataBase.Cars.Remove(car);
+                        dataBase.SaveChanges();
+                        return Json(new { success = true, message = "Car deleted successfully" });
+                    }
+                    else
+                    {
+                        var lodger = dataBase.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(ownerId));
+                        if (lodger != null)
+                        {
+                            dataBase.OwnedCars.Remove(dataBase.OwnedCars.FirstOrDefault(x => x.CarId == car.Id && x.OwnerId == lodger.Id));
+                            dataBase.SaveChanges();
+                        }
+                    }
+                    return Json(new { success = false, message = "Car not found" });
                 }
+                return Json(null);
             }
-            return Json(new { success = false, message = "Car not found" });
         }
 
         [HttpPost]
         public JsonResult UpdateCars(string id, List<OwnedCar> selectedCars)
         {
-            var lodger = _context.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(id));
-            if (lodger != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                var lodgerCars = _context.OwnedCars.Where(x => x.OwnerId == lodger.Id);
-                foreach (var car in lodgerCars)
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
                 {
-                    _context.OwnedCars.Remove(car);
-                }
-                _context.SaveChanges();
-
-                foreach (var item in selectedCars)
-                {
-                    var car = _context.Cars.Find(item.Id);
-                    if (car != null)
+                    var lodger = dataBase.Lodgers.Include(l => l.OwnedCars).FirstOrDefault(l => l.Id == int.Parse(id));
+                    if (lodger != null)
                     {
-                        _context.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = lodger.Id });
-                    }
-                }
+                        var lodgerCars = dataBase.OwnedCars.Where(x => x.OwnerId == lodger.Id);
+                        foreach (var car in lodgerCars)
+                        {
+                            dataBase.OwnedCars.Remove(car);
+                        }
+                        dataBase.SaveChanges();
 
-                _context.SaveChanges();
-                return Json("Выбранные машины успешно добавлены");
+                        foreach (var item in selectedCars)
+                        {
+                            var car = dataBase.Cars.Find(item.Id);
+                            if (car != null)
+                            {
+                                dataBase.OwnedCars.Add(new OwnedCar { CarId = car.Id, OwnerId = lodger.Id });
+                            }
+                        }
+
+                        dataBase.SaveChanges();
+                        return Json("Выбранные машины успешно добавлены");
+                    }
+                    return Json("Ошибка при добавлении выбранных машин");
+                }
+                return Json(null);
             }
-            return Json("Ошибка при добавлении выбранных машин");
         }
     }
 }

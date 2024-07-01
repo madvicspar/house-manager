@@ -6,92 +6,125 @@ namespace house_manager.Controllers
 {
     public class ApartmentsController : Controller
     {
-        private readonly ApplicationContext _context;
-
-        public ApartmentsController(ApplicationContext context)
-        {
-            _context = context;
-        }
-
         public JsonResult Get()
         {
-            var apartments = _context.Apartments.ToList();
-            return Json(apartments);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var apartments = dataBase.Apartments.ToList();
+                    return Json(apartments);
+                }
+                return Json(null);
+            }
         }
 
         [HttpPost]
         public JsonResult UpdateApartments(string id, List<Apartment> selectedApartments)
         {
-            var lodger = _context.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(id));
-            if (lodger != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                var ownedApartmentsIds = lodger.OwnedApartments.Where(x => selectedApartments.Any(c => c.Id == x.ApartmentId)).Select(x => x.ApartmentId).ToList();
-
-                var lodgerApartments = _context.OwnedApartments.Where(x => x.OwnerId == lodger.Id);
-                foreach (var apartment in lodgerApartments)
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
                 {
-                    if (!ownedApartmentsIds.Contains(apartment.ApartmentId))
-                        _context.OwnedApartments.Remove(apartment);
-                }
-                _context.SaveChanges();
-
-                foreach (var item in selectedApartments)
-                {
-                    if (ownedApartmentsIds.Contains(item.Id))
-                        continue;
-                    var apartment = _context.Apartments.Find(item.Id);
-                    if (apartment != null)
+                    var lodger = dataBase.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(id));
+                    if (lodger != null)
                     {
-                        _context.OwnedApartments.Add(new OwnedApartment { ApartmentId = apartment.Id, OwnerId = lodger.Id });
-                        _context.SaveChanges();
-                        apartment.ResidentsNumber++;
-                        _context.Apartments.Update(apartment);
-                        _context.SaveChanges();
-                    }
-                }
+                        var ownedApartmentsIds = lodger.OwnedApartments.Where(x => selectedApartments.Any(c => c.Id == x.ApartmentId)).Select(x => x.ApartmentId).ToList();
 
-                _context.SaveChanges();
-                return Json("Выбранные квартиры успешно добавлены");
+                        var lodgerApartments = dataBase.OwnedApartments.Where(x => x.OwnerId == lodger.Id);
+                        foreach (var apartment in lodgerApartments)
+                        {
+                            if (!ownedApartmentsIds.Contains(apartment.ApartmentId))
+                                dataBase.OwnedApartments.Remove(apartment);
+                        }
+                        dataBase.SaveChanges();
+
+                        foreach (var item in selectedApartments)
+                        {
+                            if (ownedApartmentsIds.Contains(item.Id))
+                                continue;
+                            var apartment = dataBase.Apartments.Find(item.Id);
+                            if (apartment != null)
+                            {
+                                dataBase.OwnedApartments.Add(new OwnedApartment { ApartmentId = apartment.Id, OwnerId = lodger.Id });
+                                dataBase.SaveChanges();
+                                apartment.ResidentsNumber++;
+                                dataBase.Apartments.Update(apartment);
+                                dataBase.SaveChanges();
+                            }
+                        }
+
+                        dataBase.SaveChanges();
+                        return Json("Выбранные квартиры успешно добавлены");
+                    }
+                    return Json("Ошибка при добавлении выбранных квартир");
+                }
+                return Json(null);
             }
-            return Json("Ошибка при добавлении выбранных квартир");
         }
 
         [HttpGet]
         public JsonResult Edit(string id)
         {
-            var ownedApartment = _context.OwnedApartments.Where(l => l.Id == int.Parse(id)).Include(x => x.Apartment).First();
-            return Json(ownedApartment);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var ownedApartment = dataBase.OwnedApartments.Where(l => l.Id == int.Parse(id)).Include(x => x.Apartment).First();
+                    return Json(ownedApartment);
+                }
+                return Json(null);
+            }
         }
 
         [HttpPost]
         public JsonResult Update(string id, string ownershipPercentage, string ownerId)
         {
-            if (!float.TryParse(ownershipPercentage, out float temp))
-                return Json(new { success = false, message = "Вводите только числа" });
-            var ownedApartment = _context.OwnedApartments.Find(int.Parse(id));
-            var sum = _context.OwnedApartments.Where(x => x.ApartmentId == ownedApartment.ApartmentId && x.OwnerId != int.Parse(ownerId)).Sum(x => x.OwnershipPercentage);
-            if (sum + float.Parse(ownershipPercentage) > 100)
-                return Json(new { success = false, message = $"Ваша доля стоимости не должна превышать {(100 - sum)}%" });
-            ownedApartment.OwnershipPercentage = float.Parse(ownershipPercentage);
-            _context.OwnedApartments.Update(ownedApartment);
-            _context.SaveChanges();
-            return Json(new { success = true, message = "Owned Apartment updated successfully" });
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    if (!float.TryParse(ownershipPercentage, out float temp))
+                        return Json(new { success = false, message = "Вводите только числа" });
+                    var ownedApartment = dataBase.OwnedApartments.Find(int.Parse(id));
+                    var sum = dataBase.OwnedApartments.Where(x => x.ApartmentId == ownedApartment.ApartmentId && x.OwnerId != int.Parse(ownerId)).Sum(x => x.OwnershipPercentage);
+                    if (sum + float.Parse(ownershipPercentage) > 100)
+                        return Json(new { success = false, message = $"Ваша доля стоимости не должна превышать {(100 - sum)}%" });
+                    ownedApartment.OwnershipPercentage = float.Parse(ownershipPercentage);
+                    dataBase.OwnedApartments.Update(ownedApartment);
+                    dataBase.SaveChanges();
+                    return Json(new { success = true, message = "Owned Apartment updated successfully" });
+                }
+                return Json(null);
+            }
         }
 
         [HttpPost]
         public JsonResult Delete(string id, string ownerId)
         {
-            var apartment = _context.Apartments.Find(int.Parse(id));
-            var lodger = _context.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(ownerId));
-            if (lodger != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.OwnedApartments.Remove(_context.OwnedApartments.FirstOrDefault(x => x.ApartmentId == apartment.Id && x.OwnerId == lodger.Id));
-                _context.SaveChanges();
-                apartment.ResidentsNumber--;
-                _context.Apartments.Update(apartment);
-                _context.SaveChanges();
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var apartment = dataBase.Apartments.Find(int.Parse(id));
+                    var lodger = dataBase.Lodgers.Include(l => l.OwnedApartments).FirstOrDefault(l => l.Id == int.Parse(ownerId));
+                    if (lodger != null)
+                    {
+                        dataBase.OwnedApartments.Remove(dataBase.OwnedApartments.FirstOrDefault(x => x.ApartmentId == apartment.Id && x.OwnerId == lodger.Id));
+                        dataBase.SaveChanges();
+                        apartment.ResidentsNumber--;
+                        dataBase.Apartments.Update(apartment);
+                        dataBase.SaveChanges();
+                    }
+                    return Json(new { success = false, message = "Apartment not found" });
+                }
+                return Json(null);
             }
-            return Json(new { success = false, message = "Apartment not found" });
         }
     }
 }

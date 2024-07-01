@@ -7,6 +7,7 @@ namespace house_manager.Models
     [Index(nameof(Number), IsUnique = true)]
     public class Apartment
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
         public string Number { get; set; }

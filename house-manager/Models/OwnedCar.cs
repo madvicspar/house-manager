@@ -4,6 +4,7 @@ namespace house_manager.Models
 {
     public class OwnedCar
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [ForeignKey("CarId")]
         public int CarId { get; set; }

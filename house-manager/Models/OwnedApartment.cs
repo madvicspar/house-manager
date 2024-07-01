@@ -5,6 +5,7 @@ namespace house_manager.Models
 {
     public class OwnedApartment
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [ForeignKey("ApartmentId")]
         public int ApartmentId { get; set; }

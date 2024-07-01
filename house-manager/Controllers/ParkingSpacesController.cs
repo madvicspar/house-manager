@@ -6,58 +6,75 @@ namespace house_manager.Controllers
 {
     public class ParkingSpacesController : Controller
     {
-        private readonly ApplicationContext _context;
-
-        public ParkingSpacesController(ApplicationContext context)
-        {
-            _context = context;
-        }
-
         public JsonResult Get(string id)
         {
-            var parkingSpaces = _context.ParkingSpaces.Where(x => !_context.OwnedParkingSpaces.Any(ops => ops.ParkingSpaceId == x.Id) || _context.OwnedParkingSpaces.Any(ops => ops.ParkingSpaceId == x.Id && ops.OwnerId == int.Parse(id))).ToList();
-            return Json(parkingSpaces);
+            using (var serviceScope = ServiceActivator.GetScope())
+            {
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var parkingSpaces = dataBase.ParkingSpaces.Where(x => !dataBase.OwnedParkingSpaces.Any(ops => ops.ParkingSpaceId == x.Id) || dataBase.OwnedParkingSpaces.Any(ops => ops.ParkingSpaceId == x.Id && ops.OwnerId == int.Parse(id))).ToList();
+                    return Json(parkingSpaces);
+                }
+                return Json(null);
+            }
         }
 
         [HttpPost]
         public JsonResult Update(string id, List<ParkingSpace> selectedParkingSpaces)
         {
-            var lodger = _context.Lodgers.Include(l => l.OwnedParkingSpaces).FirstOrDefault(l => l.Id == int.Parse(id));
-            if (lodger != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                var lodgerOwnedParkingSpaces = _context.OwnedParkingSpaces.Where(x => x.OwnerId == lodger.Id);
-                foreach (var parkingSpace in lodgerOwnedParkingSpaces)
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
                 {
-                    _context.OwnedParkingSpaces.Remove(parkingSpace);
-                }
-                _context.SaveChanges();
-
-                foreach (var item in selectedParkingSpaces)
-                {
-                    var parkingSpace = _context.ParkingSpaces.Find(item.Id);
-                    if (parkingSpace != null)
+                    var lodger = dataBase.Lodgers.Include(l => l.OwnedParkingSpaces).FirstOrDefault(l => l.Id == int.Parse(id));
+                    if (lodger != null)
                     {
-                        _context.OwnedParkingSpaces.Add(new OwnedParkingSpace() { ParkingSpaceId = parkingSpace.Id, OwnerId = lodger.Id });
-                    }
-                }
+                        var lodgerOwnedParkingSpaces = dataBase.OwnedParkingSpaces.Where(x => x.OwnerId == lodger.Id);
+                        foreach (var parkingSpace in lodgerOwnedParkingSpaces)
+                        {
+                            dataBase.OwnedParkingSpaces.Remove(parkingSpace);
+                        }
+                        dataBase.SaveChanges();
 
-                _context.SaveChanges();
-                return Json("Выбранные парковочные места успешно забронированы");
+                        foreach (var item in selectedParkingSpaces)
+                        {
+                            var parkingSpace = dataBase.ParkingSpaces.Find(item.Id);
+                            if (parkingSpace != null)
+                            {
+                                dataBase.OwnedParkingSpaces.Add(new OwnedParkingSpace() { ParkingSpaceId = parkingSpace.Id, OwnerId = lodger.Id });
+                            }
+                        }
+
+                        dataBase.SaveChanges();
+                        return Json("Выбранные парковочные места успешно забронированы");
+                    }
+                    return Json("Ошибка при бронировании выбранных парковочных мест");
+                }
+                return Json(null);
             }
-            return Json("Ошибка при бронировании выбранных парковочных мест");
         }
 
         [HttpPost]
         public JsonResult Delete(string id)
         {
-            var parkingSpace = _context.OwnedParkingSpaces.FirstOrDefault(x => x.ParkingSpaceId == int.Parse(id));
-            if (parkingSpace != null)
+            using (var serviceScope = ServiceActivator.GetScope())
             {
-                _context.OwnedParkingSpaces.Remove(parkingSpace);
-                _context.SaveChanges();
-                return Json("ParkingSpace deleted successfully");
+                var dataBase = serviceScope.ServiceProvider.GetService<ApplicationContext>();
+                if (dataBase != null)
+                {
+                    var parkingSpace = dataBase.OwnedParkingSpaces.FirstOrDefault(x => x.ParkingSpaceId == int.Parse(id));
+                    if (parkingSpace != null)
+                    {
+                        dataBase.OwnedParkingSpaces.Remove(parkingSpace);
+                        dataBase.SaveChanges();
+                        return Json("ParkingSpace deleted successfully");
+                    }
+                    return Json("ParkingSpace not found");
+                }
+                return Json(null);
             }
-            return Json("ParkingSpace not found");
         }
     }
 }
