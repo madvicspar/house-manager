@@ -1,6 +1,5 @@
 using house_manager;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +13,7 @@ builder.Services.AddDbContext<ApplicationContext>(options
                     => options.UseSqlServer(connectionString));
 
 ServiceActivator.Configure(builder.Services.BuildServiceProvider());
+DbInitializer.Initialize(builder.Services.BuildServiceProvider());
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
