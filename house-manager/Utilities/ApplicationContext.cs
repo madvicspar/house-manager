@@ -1,7 +1,7 @@
 ﻿using house_manager.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace house_manager
+namespace house_manager.Utilities
 {
     public class ApplicationContext : DbContext
     {

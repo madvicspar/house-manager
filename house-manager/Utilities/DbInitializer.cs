@@ -1,6 +1,6 @@
 ﻿using house_manager.Models;
 
-namespace house_manager
+namespace house_manager.Utilities
 {
     public class DbInitializer
     {

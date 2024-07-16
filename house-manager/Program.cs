@@ -1,4 +1,4 @@
-using house_manager;
+using house_manager.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
