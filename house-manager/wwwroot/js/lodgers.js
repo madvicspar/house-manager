@@ -15,7 +15,7 @@ function LoadData() {
 
 function GetHouseAdress() {
     $.ajax({
-        url: '/Lodgers/GetHouseAdress',
+        url: '/Lodgers/GetHouseAddress',
         type: 'GET',
         dataType: 'Json',
         contentType: 'application/json;charset=utf-8',
